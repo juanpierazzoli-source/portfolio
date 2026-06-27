@@ -1,0 +1,297 @@
+/* ===== Juan Pierazzoli — Supermercado ===== */
+:root {
+  --blue:   #3070c9;
+  --yellow: #f5c64b;
+  --ink:    #000;
+  --paper:  #fff;
+  --page-max: 1600px;   /* composición grande, cerca de los bordes */
+}
+
+* { box-sizing: border-box; }
+
+/* ===== Textura tipo TV (scanlines) sobre toda la web ===== */
+.scanlines {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;             /* debajo del granulado */
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.05) 0px,
+    rgba(0, 0, 0, 0.05) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+/* ===== Granulado animado (film grain) sobre toda la web ===== */
+.grain {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;          /* no bloquea clics */
+  z-index: 9999;
+  opacity: 0.08;                 /* sutil */
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+img { display: block; max-width: 100%; }
+
+.page {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: 0 2vw;        /* poco margen lateral: todo más al borde */
+}
+
+/* ===== Header / Hero (pantalla completa) ===== */
+.header {
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.header__stage {
+  width: 70%;
+  will-change: transform;        /* se mueve siguiendo el mouse (2D) */
+}
+.header__art {
+  width: 100%;
+  display: block;
+}
+
+/* rastro de fotos que sigue al mouse (solo en el hero) */
+.trail {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 3;
+}
+.trail__img {
+  position: absolute;
+  width: clamp(240px, 24vw, 420px);
+  transform: translate(-50%, -50%) scale(0.84);
+  opacity: 0;
+  will-change: transform, opacity;
+  transition: opacity .22s ease, transform .24s cubic-bezier(.2, .8, .2, 1);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .20);
+}
+.trail__img.is-in {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+.trail__img.is-out {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(1.06);
+  transition: opacity .55s ease, transform .55s ease;
+}
+
+/* ===== Servicios (pantalla completa) ===== */
+.services {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* lista de trabajos (10 líneas apiladas y centradas) */
+.works {
+  position: relative;
+  z-index: 1;                 /* el texto va sobre la media */
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+.work {
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;             /* centra cada línea según su ancho */
+  background: var(--blue);    /* el rectángulo detrás del texto (cambia en hover) */
+  transition: opacity .25s ease, background-color .2s ease;
+}
+.work a { display: block; }
+.work img {
+  display: block;
+  height: 6vh;               /* todas las líneas a la misma altura */
+  width: auto;
+  max-width: 98vw;
+  margin: 0 auto;
+}
+/* al pasar el mouse por un trabajo con media, los demás se atenúan */
+.works.is-hovering .work { opacity: .12; }
+.works.is-hovering .work.is-active { opacity: 1; }
+
+/* capa de media a pantalla completa */
+.works-media {
+  position: fixed;
+  inset: 0;
+  z-index: 0;                 /* detrás del texto, sobre el fondo de color */
+  opacity: 0;
+  pointer-events: none;
+  background: transparent;    /* deja ver el color del fondo alrededor */
+  transition: opacity .35s ease;
+}
+.works-media.is-on { opacity: 1; }
+.works-media__img,
+.works-media__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;          /* ocupa todo el ancho, centrado */
+  object-position: center;
+  display: none;
+}
+
+/* player de YouTube (112): cubre la pantalla manteniendo 16:9 */
+.works-media__yt {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  display: none;
+}
+.works-media__yt iframe {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: max(100vw, 177.78vh);   /* cover 16:9 */
+  height: max(100vh, 56.25vw);
+  border: 0;
+  pointer-events: none;
+}
+
+/* ===== Street photography ===== */
+.street {
+  position: relative;       /* bloque contenedor del sticky */
+  padding-top: 15vh;        /* el título arranca más abajo */
+  padding-bottom: 10vh;
+}
+.street__title {
+  position: sticky;         /* queda fijo mientras scrollean las fotos */
+  top: 12vh;
+  z-index: 1;               /* el título va POR DETRÁS de las fotos */
+  width: 80%;               /* un poco más chico */
+  margin: 0 auto 6vh;
+}
+.street__title--mob { display: none; }   /* la versión de 2 líneas solo en celular */
+
+/* Collage: bloque ya compuesto (un solo PNG con las posiciones correctas) */
+.collage {
+  position: relative;
+  z-index: 2;            /* las fotos pasan POR ENCIMA del título sticky */
+  display: block;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* ===== Footer (pantalla completa) ===== */
+.footer {
+  position: relative;        /* contiene el rastro de fotos (.trail) */
+  isolation: isolate;        /* contexto propio para escalonar art/trail/cm */
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.footer__brand {
+  position: relative;        /* sin z-index propio: deja escalonar art/trail/cm */
+  width: 50%;
+  margin: 0 auto;
+}
+.footer__art {
+  position: relative;
+  z-index: 1;                /* logo + texto + logos: por DEBAJO del rastro */
+  width: 100%;
+}
+/* el rastro de fotos va POR ENCIMA del footer pero POR DEBAJO del CONTACT ME */
+.footer .trail { z-index: 2; }
+
+/* CONTACT ME como elemento aparte: arriba de todo, sigue al mouse, link a WhatsApp */
+.footer__cm {
+  position: absolute;
+  left: 30.8%;
+  top: 51.2%;
+  width: 38.6%;
+  z-index: 3;
+  will-change: transform;    /* se mueve con el mouse (2D) */
+}
+.footer__cm svg { width: 100%; display: block; }
+.footer__cm #contactBg { transition: fill .2s ease; }   /* cambia de color en hover */
+.footer__cm:focus-visible { outline: 3px solid var(--yellow); outline-offset: 2px; }
+
+/* gifs del JP, ubicados sobre el logo JP del footer (lo tapan, fondo blanco) */
+.footer__jp {
+  position: absolute;
+  left: 23%;                  /* como antes, un poco más grande */
+  top: 82.5%;
+  width: 18%;
+  aspect-ratio: 1;
+  background: var(--paper);   /* asegura tapar el JP estático */
+}
+.footer__jp img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;        /* diseño entero, sin recortar; todos al mismo tamaño */
+  display: block;
+}
+
+/* ===== Responsivo (celular): unifica, sin pantallas completas ===== */
+@media (max-width: 600px) {
+  /* el hero deja de ocupar 100vh: el título queda arriba, cerca de los trabajos */
+  .header {
+    min-height: auto;
+    justify-content: flex-start;
+    padding: 6vh 0 2vh;
+  }
+  .header__stage { width: 94%; }
+
+  /* las secciones dejan de ocupar 100vh: se juntan */
+  .services,
+  .footer {
+    min-height: 0;
+  }
+  /* títulos a sangre (hasta el corte): la sección rompe el padding de .page */
+  .services {
+    padding: 3vh 0 6vh;
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+  }
+  .footer   { padding: 6vh 0; }
+  /* en celular cada línea ocupa todo el ancho, hasta el borde (alto variable) */
+  .work { max-width: 100vw; }
+  .work img { height: auto; width: 100vw; max-width: 100vw; }
+  .street {
+    padding-top: 6vh;
+    padding-bottom: 6vh;
+  }
+  .street__title { width: 100%; margin-bottom: 4vh; }
+  .street__title--web { display: none; }     /* en celular: título de 2 líneas */
+  .street__title--mob { display: block; }
+  /* fotos a sangre en AMBOS lados, centrado, sin pasarse del corte */
+  .collage {
+    width: 100vw;
+    max-width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+  }
+  .footer__brand { width: 86%; }
+}

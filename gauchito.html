@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Photography — Gauchito Gil · Juan Pierazzoli</title>
+  <style>
+    :root { --paper:#fff; --gap: clamp(8px, 1.4vw, 20px); }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--paper); }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--gap);
+      padding: var(--gap);          /* margen de la página = espacio entre fotos */
+    }
+    .gallery img { width: 100%; height: auto; display: block; background: #eee; }
+
+    /* celular: una abajo de la otra; al corte en los costados, pero
+       conserva el mismo espacio vertical entre foto y foto */
+    @media (max-width: 700px) {
+      .gallery { grid-template-columns: 1fr; padding: 0; /* gap (vertical) se mantiene */ }
+    }
+
+    /* botón VOLVER flotante, abajo a la derecha; tamaño ~ CONTACT ME.
+       Sigue al mouse en horizontal (el JS aplica el translate). */
+    .gback {
+      position: fixed;
+      bottom: calc(clamp(22px, 5vh, 60px) + 20px);   /* 20px más arriba */
+      right: clamp(48px, 15vw, 300px);                /* tirado a la derecha, un poco más al medio */
+      z-index: 50;                /* debajo de las texturas (granulado/scanlines) */
+      width: min(293px, 80vw);
+      filter: drop-shadow(0 6px 16px rgba(0, 0, 0, .28));
+      will-change: transform;
+    }
+    .gback svg {
+      width: 100%;
+      display: block;
+      transition: transform .15s ease;
+    }
+    .gback:hover svg { transform: scale(1.05) rotate(-1.5deg); }
+    .gback #volverBg { transition: fill .2s ease; }   /* cambia de color en hover */
+
+    /* misma textura tipo TV que el resto del sitio */
+    .scanlines {
+      position: fixed; inset: 0; pointer-events: none; z-index: 9998;
+      background: repeating-linear-gradient(to bottom,
+        rgba(0,0,0,.05) 0px, rgba(0,0,0,.05) 1px, transparent 1px, transparent 3px);
+    }
+    /* granulado animado, por encima de todo (igual que el main) */
+    .grain {
+      position: fixed; inset: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 9999; opacity: 0.08;
+    }
+  </style>
+</head>
+<body>
+  <div class="gallery" id="gallery"></div>
+
+  <a class="gback" href="index.html" aria-label="Volver"><svg class="volver-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390.14 106.88">
+  
+  <g id="TYPE">
+    <g>
+      <rect id="volverBg" fill="#3070c9" x="1.92" y="9.39" width="386.29" height="88.09" transform="translate(-2.38 9.61) rotate(-2.8)"/>
+      <g>
+        <path fill="#fff" d="M71.65,43.74c-.59-1.24-1.23-2.06-1.9-2.47s-1.96-.57-3.85-.48l-.16-3.25,18.58-.91.16,3.25c-2.62.13-4.16.39-4.62.78s-.66.78-.61,1.19c.05.4.21.9.47,1.51l12.52,28.66,9.75-29.75c.4-1.21.22-2.03-.54-2.48-.75-.45-2.47-.61-5.15-.48l-.16-3.25,16.18-.79.16,3.25c-1.64.08-2.86.39-3.66.92-.8.53-1.41,1.39-1.83,2.58l-13.53,38.65-3.88.19-17.95-37.11Z"/>
+        <path fill="#fff" d="M114.4,57.39c-.18-3.75.23-7.1,1.23-10.07s2.42-5.44,4.26-7.43c3.62-3.91,8.39-6.02,14.31-6.31s10.87,1.31,14.85,4.79c4.42,3.84,6.81,9.44,7.17,16.82.36,7.38-1.3,13.14-4.98,17.28-3.68,4.14-8.62,6.37-14.81,6.67s-11.3-1.45-15.38-5.27c-4.08-3.81-6.3-9.31-6.65-16.49ZM136.34,75.3c3.45-.17,6.29-1.59,8.51-4.27,2.8-3.38,4.04-8.37,3.71-14.98-.32-6.61-1.82-11.41-4.5-14.4-2.68-2.99-5.93-4.4-9.76-4.21s-6.87,1.89-9.19,5.12c-2.32,3.23-3.33,7.95-3.03,14.16.44,8.93,3.17,14.7,8.2,17.3,1.85.96,3.86,1.38,6.05,1.28Z"/>
+        <path fill="#fff" d="M161.6,74.06c1.87-.09,3.09-.33,3.64-.73.55-.39.9-.8,1.04-1.22.14-.42.19-.93.16-1.52l-1.57-31.42c-.06-1.28-.32-2.07-.77-2.36-.82-.51-2.27-.72-4.36-.62l-.16-3.25,16.66-.82.16,3.25c-1.87.09-3.09.33-3.64.73-.55.39-.9.8-1.04,1.22-.14.42-.19.93-.16,1.52l1.69,34.47,10.21-.5c3.16-.15,5.24-1.99,6.26-5.5l1.02-3.4,4.08-.17-1.46,12.02-31.6,1.55-.16-3.25Z"/>
+        <path fill="#fff" d="M199.79,37.46c-.59-1.24-1.23-2.06-1.9-2.47s-1.96-.57-3.85-.48l-.16-3.25,18.58-.91.16,3.25c-2.62.13-4.16.39-4.62.78s-.66.78-.61,1.19c.05.4.21.9.47,1.51l12.52,28.66,9.75-29.75c.4-1.21.22-2.03-.54-2.48-.75-.45-2.47-.61-5.15-.48l-.16-3.25,16.18-.79.16,3.25c-1.64.08-2.86.39-3.66.92-.8.53-1.41,1.39-1.83,2.58l-13.53,38.65-3.88.19-17.95-37.11Z"/>
+        <path fill="#fff" d="M243.26,70.06c1.91-.09,3.14-.33,3.67-.71s.87-.78,1.01-1.19c.14-.41.19-.91.16-1.51l-1.54-31.48c-.06-1.22-.47-2.05-1.22-2.48-.75-.43-2.06-.6-3.91-.51l-.16-3.25,32.19-1.58,1.68,10.68-4.29.24-.96-3.3c-.47-1.58-.93-2.56-1.36-2.96-.77-.69-2.02-1-3.75-.91l-11.72.57.84,17.22,5.74-.28c2.23-.11,3.59-.32,4.08-.64.49-.32.81-.76.97-1.32.16-.56.21-1.36.16-2.41l3.85-.19.56,11.45-3.85.19c-.09-1.83-.51-2.96-1.25-3.36s-2.2-.56-4.37-.45l-5.74.28.85,17.34,12.57-.62c2.29-.11,3.77-.96,4.44-2.53.21-.49.43-.99.64-1.51l1.15-3.7,4.29-.21-.63,10.74-33.96,1.66-.16-3.25Z"/>
+        <path fill="#fff" d="M318.74,65.95c1.54-.08,2.22-1.89,2.05-5.44l2.84-.14c.25.7.39,1.32.42,1.85s.04,1.11.06,1.73c.01.62-.19,1.45-.59,2.48-.97,2.42-2.94,3.7-5.92,3.85s-5.11-.5-6.4-1.94c-1.29-1.44-2.22-2.92-2.81-4.44-.59-1.52-1.07-2.86-1.44-4.01-1.06-3.13-1.89-5.17-2.49-6.11-1.1-1.8-2.51-2.66-4.25-2.58l-6.51.32.55,11.33c.05,1.01.14,1.81.27,2.42.13.61.5,1.12,1.13,1.55s2.47.56,5.55.41l.16,3.25-18.31.9-.16-3.25c2.07-.1,3.35-.35,3.85-.74.49-.39.78-.79.86-1.21.08-.42.1-.92.07-1.52l-1.54-31.42c-.06-1.28-.32-2.07-.77-2.36-.82-.51-2.27-.72-4.36-.62l-.16-3.25,18.16-.89c9.7-.48,15.24,2.26,16.62,8.2.23.98.37,2.13.44,3.45.14,2.84-.64,5.31-2.32,7.39-1.69,2.09-4.05,3.65-7.08,4.69,2.7.68,4.79,2.71,6.26,6.1.49,1.1,1.03,2.53,1.63,4.28s1.07,2.95,1.42,3.61c.76,1.47,1.69,2.17,2.77,2.12ZM300.14,48.24c3.37-.17,5.72-1.1,7.04-2.79,1.32-1.7,1.91-4.08,1.76-7.14s-1.08-5.36-2.8-6.88-4.62-2.18-8.73-1.97l-4.79.23.92,18.88,6.6-.32Z"/>
+      </g>
+    </g>
+  </g>
+</svg></a>
+  <div class="scanlines" aria-hidden="true"></div>
+  <canvas class="grain" aria-hidden="true"></canvas>
+
+  <script>
+    (function () {
+      const N = 101;
+      const g = document.getElementById("gallery");
+      const frag = document.createDocumentFragment();
+      for (let i = 1; i <= N; i++) {
+        const im = document.createElement("img");
+        im.src = "assets/works/gauchito/" + String(i).padStart(3, "0") + ".jpg";
+        im.loading = "lazy";
+        im.alt = "Gauchito Gil — foto " + i;
+        frag.appendChild(im);
+      }
+      g.appendChild(frag);
+    })();
+
+    /* El botón VOLVER sigue al mouse (2D, sólo horizontal, poco movimiento). */
+    (function () {
+      const btn = document.querySelector(".gback");
+      if (!btn) return;
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const MAX = 16;          // px máximo a cada lado (poco movimiento)
+      const EASE = 0.12;       // suavizado/lag
+      let tx = 0, ty = 0, cx = 0, cy = 0;
+      window.addEventListener("mousemove", (e) => {
+        tx = e.clientX / window.innerWidth - 0.5;
+        ty = e.clientY / window.innerHeight - 0.5;
+      }, { passive: true });
+      window.addEventListener("mouseleave", () => { tx = 0; ty = 0; });
+      function frame() {
+        cx += (tx - cx) * EASE;
+        cy += (ty - cy) * EASE;
+        btn.style.transform =
+          "translate(" + (cx * MAX * 2).toFixed(2) + "px," + (cy * MAX * 2).toFixed(2) + "px)";
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+
+      /* en hover: color random de la paleta de trabajos, SIN el azul */
+      const rect = document.getElementById("volverBg");
+      const COLORS = [
+        "hsl(320, 61%, 49%)", // magenta
+        "hsl(140, 61%, 49%)", // verde
+        "hsl(35, 61%, 49%)",  // naranja
+        "hsl(270, 61%, 49%)", // violeta
+        "hsl(178, 61%, 49%)", // turquesa
+      ];
+      btn.addEventListener("mouseenter", () => {
+        rect.setAttribute("fill", COLORS[(Math.random() * COLORS.length) | 0]);
+      });
+      btn.addEventListener("mouseleave", () => {
+        rect.setAttribute("fill", "#3070c9");   // vuelve al azul
+      });
+    })();
+
+    /* Granulado (film grain) en movimiento, igual que el main. */
+    (function filmGrain() {
+      const canvas = document.querySelector("canvas.grain");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      const TILE = 256;
+      const tile = document.createElement("canvas");
+      tile.width = tile.height = TILE;
+      const tctx = tile.getContext("2d");
+      function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+      resize();
+      window.addEventListener("resize", resize, { passive: true });
+      function makeNoise() {
+        const img = tctx.createImageData(TILE, TILE);
+        const d = img.data;
+        for (let i = 0; i < d.length; i += 4) {
+          const v = (Math.random() * 255) | 0;
+          d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255;
+        }
+        tctx.putImageData(img, 0, 0);
+      }
+      function paint() {
+        makeNoise();
+        const pattern = ctx.createPattern(tile, "repeat");
+        ctx.save();
+        ctx.fillStyle = pattern;
+        ctx.translate(-((Math.random() * TILE) | 0), -((Math.random() * TILE) | 0));
+        ctx.fillRect(0, 0, canvas.width + TILE, canvas.height + TILE);
+        ctx.restore();
+      }
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { paint(); return; }
+      let last = 0;
+      function loop(t) {
+        if (t - last > 45) { paint(); last = t; }
+        requestAnimationFrame(loop);
+      }
+      requestAnimationFrame(loop);
+    })();
+  </script>
+</body>
+</html>

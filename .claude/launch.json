@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "autoPort": false,
+  "configurations": [
+    {
+      "name": "web",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["/Users/juan/Desktop/FACULTAD/COMPOSICION DIGITAL/tp_claude/web/.claude/serve.py"],
+      "port": 8753
+    }
+  ]
+}

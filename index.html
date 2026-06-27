@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Juan Pierazzoli — Supermercado de diseño, fotografía y poesía</title>
+  <meta name="description" content="Juan Pierazzoli. Supermercado de diseño, fotografía y poesía. Corazón en venta." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="page">
+
+    <!-- HEADER / HERO -->
+    <header class="header">
+      <div class="header__stage">
+        <img class="header__art" src="assets/header.svg"
+             alt="Juan Pierazzoli — Supermercado de diseño, fotografía y poesía. Corazón en venta." />
+      </div>
+      <!-- rastro de fotos que sigue al mouse -->
+      <div class="trail" aria-hidden="true"></div>
+    </header>
+
+    <!-- SERVICIOS -->
+    <section class="services" aria-label="Servicios">
+      <!-- capa de media a pantalla completa (se activa al pasar el mouse por un trabajo) -->
+      <div class="works-media" aria-hidden="true">
+        <img class="works-media__img" alt="" />
+        <video class="works-media__video" muted loop playsinline preload="none"
+               poster="assets/works/hito-poster.jpg"></video>
+        <div class="works-media__yt"><div id="yt-player"></div></div>
+      </div>
+
+      <ul class="works">
+        <li class="work" data-type="img"   data-src="assets/works/collage.jpg" data-box="#00c8f3"><img src="assets/services/s01.svg" alt="Collage digital" /></li>
+        <li class="work" data-type="video" data-src="assets/works/hito.mp4"     data-box="#c61a1d" data-poster="assets/works/hito-poster.jpg"><img src="assets/services/s02.svg" alt="Hito motion graphics" /></li>
+        <li class="work" data-type="img"   data-src="assets/works/lpc.jpg"      data-box="#9a9a9a"><img src="assets/services/s03.svg" alt="LPC design" /></li>
+        <li class="work" data-type="video" data-src="assets/works/blu.mp4"      data-box="#fd01fd" data-rate="3" data-poster="assets/works/blu-poster.jpg"><img src="assets/services/s04.svg" alt="Blú Pomelos visuals" /></li>
+        <li class="work" data-type="slideshow" data-src="assets/works/rostock/" data-count="10"><img src="assets/services/s05.svg" alt="Rostock catalog" /></li>
+        <li class="work" data-type="slideshow" data-src="assets/works/2ec/" data-count="5" data-interval="450"><img src="assets/services/s06.svg" alt="2EC architecture manual" /></li>
+        <li class="work" data-type="img" data-src="assets/works/poetry.jpg" data-fit="contain"><img src="assets/services/s07.svg" alt="Poetry life" /></li>
+        <li class="work" data-type="video" data-src="assets/works/interview.mp4"><img src="assets/services/s08.svg" alt="112 interviews" /></li>
+        <li class="work" data-type="img" data-src="assets/works/luv.jpg"><img src="assets/services/s09.svg" alt="Luv couture rebranding" /></li>
+        <li class="work" data-type="slideshow" data-src="assets/works/photography/" data-count="20" data-interval="450"><a href="gauchito.html" aria-label="Ver galería Photography Gauchito Gil"><img src="assets/services/s10.svg" alt="Photography Gauchito Gil" /></a></li>
+      </ul>
+    </section>
+
+    <!-- STREET PHOTOGRAPHY -->
+    <section class="street" aria-label="Street photography">
+      <!-- título original en web; versión de 2 líneas solo en celular -->
+      <img class="street__title street__title--web" src="assets/street.svg"
+           alt="Street photography — Gracias Hans Petersen por prestarme la cam Sony ZV-1F." />
+      <img class="street__title street__title--mob" src="assets/street-mobile.svg"
+           alt="Street photography — Gracias Hans Petersen por prestarme la cam Sony ZV-1F." />
+
+      <img class="collage" src="assets/collage.png"
+           alt="Collage de street photography: pareja abrazada en el tren, mujer cruzando la calle, pareja mayor en un callejón, chica frente a un banco (APV Project), dos hombres con los brazos entrelazados, brindis con vino y paraguas azul."
+           loading="lazy" />
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <div class="footer__brand">
+        <img class="footer__art" src="assets/footer-main.svg"
+             alt="Juan Pierazzoli — Supermercado. Diseño visual y activos de autoría propia. Walmart inspiration. Colaboradores: embac, JP, Facultad, Departamento 112, *apv." />
+        <a class="footer__cm" href="https://wa.me/5491168540300?text=Hola%20Juan!%20Te%20escribo%20desde%20tu%20web."
+           target="_blank" rel="noopener"
+           aria-label="Contact me — escribir por WhatsApp">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="335 490 420 135">
+<rect id="contactBg" fill="#3070c9" x="345.33" y="513.95" width="398.81" height="88.09" transform="translate(50.7 -45.35) rotate(5)"/>
+        <g>
+          <path fill="#fff" d="M391.74,559.76c4.92.43,8.22-1.56,9.92-5.98l3.37.3c-.11,1.22-.54,2.39-1.3,3.51s-1.77,2.09-3.04,2.91c-2.8,1.83-6.27,2.57-10.39,2.21-4.12-.36-7.53-2.04-10.23-5.05-3.13-3.47-4.42-8.25-3.89-14.36.43-4.87,2.1-8.86,5.01-11.98,2.07-2.23,4.69-3.67,7.86-4.34,1.63-.34,3.4-.43,5.31-.27,3.76.33,6.78,1.46,9.05,3.4s3.29,4.21,3.06,6.82c-.17,1.95-1.05,3.2-2.64,3.73-.47.16-.97.22-1.5.18-1.64-.14-2.68-.93-3.12-2.37-.13-.45-.17-.98-.12-1.58s.28-1.18.67-1.73.89-.96,1.48-1.23c-1.05-2.53-3.21-3.94-6.48-4.22s-6.03.72-8.29,3.02c-2.26,2.3-3.61,5.92-4.04,10.88-.43,4.96.27,8.83,2.12,11.61,1.85,2.78,4.24,4.3,7.18,4.56Z"/>
+          <path fill="#fff" d="M411.11,546.35c.26-2.97.94-5.56,2.05-7.79,1.11-2.22,2.49-4.02,4.15-5.38,3.27-2.69,7.25-3.83,11.93-3.42s8.41,2.2,11.17,5.37c3.06,3.49,4.34,8.16,3.83,14s-2.44,10.19-5.78,13.05c-3.34,2.86-7.47,4.08-12.37,3.65-4.89-.43-8.73-2.36-11.53-5.8-2.8-3.44-3.95-8-3.45-13.68ZM426.43,562.79c2.73.24,5.12-.58,7.15-2.44,2.57-2.36,4.08-6.15,4.54-11.38s-.21-9.17-1.99-11.81c-1.78-2.64-4.19-4.1-7.22-4.36-3.01-.26-5.61.75-7.78,3.04-2.18,2.29-3.48,5.89-3.91,10.81-.62,7.07.91,11.9,4.59,14.49,1.35.95,2.89,1.5,4.62,1.65Z"/>
+          <path fill="#fff" d="M446.32,564.49c1.53.13,2.54.07,3.01-.19.48-.26.8-.55.96-.87.16-.32.26-.72.3-1.19l2.16-24.69c.09-1.01-.04-1.67-.39-1.97-.58-.51-1.73-.84-3.43-.98l.23-2.62,8.08.71,17.86,27.27,1.77-20.28c.09-1.03-.03-1.69-.37-1.97-.59-.51-1.72-.83-3.41-.98l.23-2.62,11.8,1.03-.23,2.62c-1.53-.13-2.54-.07-3.01.18-.48.26-.8.55-.96.87s-.26.72-.3,1.19l-2.62,29.91-2.88-.25-18.89-28.82-1.9,21.74c-.09,1.01.04,1.67.39,1.97.58.51,1.74.84,3.45.99l-.23,2.62-11.88-1.04.23-2.62Z"/>
+          <path fill="#fff" d="M491.99,568.53c1.76.15,2.95.11,3.55-.13s1-.51,1.21-.83c.2-.31.32-.7.36-1.17l2.39-27.29-4.8-.42c-2.58-.23-4.17,1.01-4.79,3.71l-1.1,4.69-3.39-.32,2.04-11.46,29.82,2.61.02,11.64-3.4-.27-.26-4.81c-.06-1.28-.32-2.21-.77-2.78-.82-1.02-1.92-1.58-3.3-1.7l-4.8-.42-2.39,27.29c-.09.98.18,1.68.8,2.1.62.42,1.91.71,3.88.88l-.23,2.58-15.06-1.32.23-2.58Z"/>
+          <path fill="#fff" d="M515.39,570.58c1.3.11,2.29,0,2.99-.34.7-.34,1.27-.95,1.7-1.82l15.27-28.9,4,.35,8.95,31.02c.33,1.04.74,1.75,1.23,2.15.48.4,1.48.66,2.98.79l-.23,2.58-14.45-1.26.23-2.58c2.06.18,3.3.15,3.7-.1.41-.25.61-.54.62-.87,0-.33-.07-.74-.21-1.25l-1.59-6.06-13.61-1.19-2.93,5.67c-.44.91-.39,1.58.15,2.01.54.43,1.88.74,4,.93l-.23,2.58-12.81-1.12.23-2.58ZM539.89,561.63l-4.11-15.65-7.54,14.64,11.64,1.02Z"/>
+          <path fill="#fff" d="M571.37,575.48c4.92.43,8.22-1.56,9.92-5.98l3.37.3c-.11,1.22-.54,2.39-1.3,3.51s-1.77,2.09-3.04,2.91c-2.8,1.83-6.27,2.57-10.39,2.21s-7.53-2.04-10.23-5.05c-3.13-3.47-4.42-8.25-3.89-14.36.43-4.87,2.1-8.86,5.01-11.98,2.07-2.23,4.69-3.67,7.86-4.34,1.64-.34,3.4-.43,5.31-.27,3.76.33,6.78,1.46,9.05,3.4s3.29,4.21,3.06,6.82c-.17,1.95-1.05,3.2-2.64,3.73-.47.16-.97.22-1.5.18-1.64-.14-2.68-.93-3.12-2.37-.13-.45-.17-.98-.12-1.58s.28-1.18.67-1.73c.39-.56.89-.96,1.48-1.23-1.05-2.53-3.21-3.94-6.47-4.22s-6.03.72-8.29,3.02c-2.26,2.3-3.61,5.92-4.04,10.88s.27,8.83,2.12,11.61c1.85,2.78,4.24,4.3,7.18,4.56Z"/>
+          <path fill="#fff" d="M596.2,577.65c1.76.15,2.95.11,3.55-.12.6-.24,1-.51,1.21-.83.2-.31.32-.7.36-1.17l2.39-27.29-4.8-.42c-2.58-.23-4.17,1.01-4.79,3.71l-1.09,4.7-3.39-.32,2.04-11.46,29.82,2.61.02,11.64-3.4-.27-.26-4.81c-.06-1.28-.32-2.21-.77-2.78-.82-1.02-1.92-1.58-3.3-1.7l-4.8-.42-2.39,27.29c-.09.98.18,1.68.8,2.1.62.42,1.91.71,3.88.88l-.23,2.58-15.06-1.32.23-2.58Z"/>
+          <path fill="#fff" d="M637.77,581.28c1.47.13,2.44.07,2.92-.18s.79-.53.95-.85c.15-.32.25-.71.29-1.18l2.18-24.87c.09-1.01-.03-1.66-.35-1.94-.59-.49-1.71-.81-3.36-.95l.23-2.58,11.05.97,8.01,28.01,12.33-26.23,10.94.96-.23,2.58c-1.48-.13-2.46-.07-2.94.18-.48.25-.79.53-.95.85-.15.32-.25.71-.29,1.18l-2.18,24.87c-.09,1,.04,1.65.37,1.94.59.49,1.71.81,3.36.95l-.23,2.58-13-1.14.23-2.58c1.47.13,2.43.07,2.88-.18.45-.25.75-.54.89-.85.14-.32.23-.71.27-1.18l2.19-24.99-13.5,29.17-2.6-.23-9.36-31.19-2.19,25.01c-.09,1.02.03,1.66.35,1.94.59.49,1.71.81,3.36.95l-.23,2.58-11.62-1.02.23-2.58Z"/>
+          <path fill="#fff" d="M683.66,585.3c1.51.13,2.5.08,2.96-.17.46-.24.77-.52.92-.83.15-.31.25-.7.29-1.17l2.18-24.92c.08-.97-.15-1.66-.69-2.08s-1.55-.69-3.02-.82l.23-2.58,25.48,2.23.17,8.58-3.4-.27-.4-2.7c-.2-1.29-.45-2.12-.75-2.47-.53-.63-1.48-1-2.85-1.12l-9.27-.81-1.19,13.63,4.54.4c1.76.15,2.86.13,3.27-.07s.72-.51.91-.94c.19-.42.32-1.05.39-1.88l3.04.27-.79,9.06-3.04-.27c.13-1.45-.08-2.38-.62-2.78-.54-.4-1.67-.68-3.38-.83l-4.54-.4-1.2,13.72,9.95.87c1.81.16,3.07-.34,3.77-1.51.22-.36.44-.73.66-1.12l1.31-2.79,3.4.3-1.65,8.38-26.89-2.35.23-2.58Z"/>
+        </g>
+</svg>
+        </a>
+      </div>
+      <!-- rastro de fotos que sigue al mouse (igual que el hero) -->
+      <div class="trail" aria-hidden="true"></div>
+    </footer>
+
+  </main>
+
+  <!-- textura tipo TV (líneas horizontales) sobre toda la web -->
+  <div class="scanlines" aria-hidden="true"></div>
+  <!-- granulado animado sobre toda la web -->
+  <canvas class="grain" aria-hidden="true"></canvas>
+
+  <script src="main.js"></script>
+</body>
+</html>

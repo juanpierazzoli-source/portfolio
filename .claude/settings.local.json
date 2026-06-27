@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"/Users/juan/Desktop/FACULTAD/COMPOSICION DIGITAL/tp_claude/web\" && ls -la && echo \"---PARENT---\" && ls -la \"/Users/juan/Desktop/FACULTAD/COMPOSICION DIGITAL/\")",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(kill 31019)",
+      "Bash(rm -rf /tmp/htmlprev)",
+      "Bash(mkdir -p /tmp/htmlprev)",
+      "Bash(qlmanage -t -s 760 -o /tmp/htmlprev index.html)",
+      "Read(//tmp/**)",
+      "Bash(sips -g pixelWidth -g pixelHeight /tmp/htmlprev/index.html.png)",
+      "Bash(rm -rf /tmp/logos)",
+      "Bash(mkdir -p /tmp/logos)",
+      "Bash(qlmanage -t -s 1000 -o /tmp/logos \"Asset 32thos.svg\")",
+      "Bash(cp \"../Asset 32thos.svg\" \"assets/partners.svg\")",
+      "Read(//Users/juan/Desktop/**)",
+      "Bash(open index.html)",
+      "Bash(rm -rf /tmp/t33)",
+      "Bash(mkdir -p /tmp/t33)",
+      "Bash(qlmanage -t -s 900 -o /tmp/t33 \"Asset 33thos.svg\")",
+      "Bash(cd \"/Users/juan/Desktop/FACULTAD/COMPOSICION DIGITAL/tp_claude/web\" && cp \"../Asset 33thos.svg\" \"assets/header.svg\" && echo \"header reemplazado\" && ls -la assets/header.svg)",
+      "Bash(rm -rf /tmp/hd)",
+      "Bash(mkdir -p /tmp/hd)",
+      "Bash(qlmanage -t -s 1000 -o /tmp/hd index.html)",
+      "Bash(rm -rf /tmp/hero)",
+      "Bash(mkdir -p /tmp/hero)",
+      "Bash(qlmanage -t -s 1000 -o /tmp/hero index.html)",
+      "Bash(rm -rf /tmp/t34)",
+      "Bash(mkdir -p /tmp/t34)",
+      "Bash(qlmanage -t -s 900 -o /tmp/t34 \"Asset 34thos.svg\")",
+      "Bash(sips -g pixelWidth -g pixelHeight -g hasAlpha \"Asset 36thos.png\")",
+      "Bash(rm -rf /tmp/st)",
+      "Bash(mkdir -p /tmp/st)",
+      "Bash(qlmanage -t -s 1000 -o /tmp/st assets/street.svg)",
+      "Bash(rm -rf /tmp/grain)",
+      "Bash(mkdir -p /tmp/grain)",
+      "Bash(qlmanage -t -s 1100 -o /tmp/grain index.html)",
+      "Bash(pip3 install *)",
+      "Bash(python3 -c ' *)"
+    ]
+  }
+}
