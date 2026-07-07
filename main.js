@@ -357,13 +357,22 @@ function makeTrail(zone, SRCS) {
     ytBox.style.display = "none";
   }
 
-  works.forEach((work) => {
-    work.addEventListener("mouseenter", () => {
-      if (work.dataset.src) activate(work);
-      else reset();                   // trabajo sin media: limpia el efecto
-    });
+  // El fondo del proyecto se ve SOLO mientras el mouse está sobre un título.
+  // Delegación con mouseover: si el puntero pasa a un hueco entre títulos o a
+  // un trabajo sin media, se limpia; al salir de la lista, también.
+  let currentWork = null;
+  list.addEventListener("mouseover", (e) => {
+    const work = e.target.closest(".work");
+    if (work && work.dataset.src) {
+      if (work !== currentWork) { currentWork = work; activate(work); }
+    } else if (currentWork) {
+      currentWork = null;
+      reset();
+    }
   });
-  services.addEventListener("mouseleave", reset);
+  list.addEventListener("mouseleave", () => {
+    if (currentWork) { currentWork = null; reset(); }
+  });
 })();
 
 

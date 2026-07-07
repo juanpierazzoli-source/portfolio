@@ -15,7 +15,8 @@
       gap: var(--gap);
       padding: var(--gap);          /* margen de la página = espacio entre fotos */
     }
-    .gallery img { width: 100%; height: auto; display: block; background: #eee; }
+    .gallery .gitem { position: relative; display: block; }
+    .gallery .gitem img { width: 100%; height: auto; display: block; background: #eee; }
 
     /* celular: una abajo de la otra; al corte en los costados, pero
        conserva el mismo espacio vertical entre foto y foto */
@@ -82,12 +83,18 @@
       const N = 101;
       const g = document.getElementById("gallery");
       const frag = document.createDocumentFragment();
+
       for (let i = 1; i <= N; i++) {
+        const item = document.createElement("div");
+        item.className = "gitem";
+
         const im = document.createElement("img");
         im.src = "assets/works/gauchito/" + String(i).padStart(3, "0") + ".jpg";
         im.loading = "lazy";
         im.alt = "Gauchito Gil — foto " + i;
-        frag.appendChild(im);
+
+        item.appendChild(im);
+        frag.appendChild(item);
       }
       g.appendChild(frag);
     })();
