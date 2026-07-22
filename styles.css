@@ -111,9 +111,9 @@ img { display: block; max-width: 100%; }
   transform: translate(-50%, -50%) scale(1.06);
   transition: opacity .55s ease, transform .55s ease;
 }
-/* variante chica: trail automático en touch */
+/* variante chica: trail automático en touch (80% más grande que la v1) */
 .trail__img--sm {
-  width: clamp(84px, 24vw, 140px);
+  width: clamp(151px, 43vw, 252px);
   box-shadow: 0 8px 22px rgba(0, 0, 0, .18);
 }
 
@@ -264,6 +264,10 @@ img { display: block; max-width: 100%; }
 .footer__cm #contactBg { transition: fill .2s ease; }   /* cambia de color en hover */
 .footer__cm:focus-visible { outline: 3px solid var(--yellow); outline-offset: 2px; }
 
+/* tira de logos de clientes: solo existe como elemento propio en celular
+   (en desktop los logos ya vienen dentro de footer-main.svg) */
+.footer__logos { display: none; }
+
 /* gifs del JP, ubicados sobre el logo JP del footer (lo tapan, fondo blanco) */
 .footer__jp {
   position: absolute;
@@ -304,6 +308,29 @@ img { display: block; max-width: 100%; }
     min-height: 90vh;
     min-height: 90svh;
     padding: 0;
+    justify-content: flex-start;   /* los márgenes auto reparten el espacio */
+  }
+  /* el arte se recorta abajo del CONTACT ME (la banda de logos se saca de acá):
+     mismo archivo, ventana y 0..640 del viewBox 1089.21x956.28 */
+  .footer__brand { margin-top: auto; }
+  .footer__art {
+    aspect-ratio: 1089.21 / 640;
+    object-fit: cover;
+    object-position: top;
+  }
+  /* CONTACT ME arranca en y=490 del SVG → 490/640 del recorte */
+  .footer__cm { top: 76.6%; }
+  /* el gif JP tapaba el logo dentro del arte completo; con el recorte no aplica */
+  .footer__jp { display: none; }
+  /* los logos, como imagen aparte (ventana inferior del mismo SVG), al fondo */
+  .footer__logos {
+    display: block;
+    width: 86%;
+    aspect-ratio: 1089.21 / 120;
+    object-fit: cover;
+    object-position: bottom;
+    margin-top: auto;
+    margin-bottom: 5vh;
   }
 
   /* señal de scroll: chiquita, clarita, abajo al centro */
