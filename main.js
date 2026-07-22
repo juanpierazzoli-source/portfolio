@@ -121,9 +121,10 @@ function makeTrail(zone, SRCS) {
     let timer = null;
     function spawnRandom() {
       const r = zone.getBoundingClientRect();
-      const m = 0.14;        // margen: no pegar las fotos al borde
-      const x = r.width  * (m + Math.random() * (1 - 2 * m));
-      const y = r.height * (m + Math.random() * (1 - 2 * m));
+      // sin margen: las fotos pueden caer sobre el borde y salen al corte
+      // (la capa .trail recorta con overflow: hidden)
+      const x = r.width * Math.random();
+      const y = r.height * Math.random();
       spawn(x, y, true);
     }
     const io = new IntersectionObserver((entries) => {

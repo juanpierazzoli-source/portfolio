@@ -111,9 +111,9 @@ img { display: block; max-width: 100%; }
   transform: translate(-50%, -50%) scale(1.06);
   transition: opacity .55s ease, transform .55s ease;
 }
-/* variante chica: trail automático en touch (80% más grande que la v1) */
+/* variante chica: trail automático en touch (2x la v1) */
 .trail__img--sm {
-  width: clamp(151px, 43vw, 252px);
+  width: clamp(168px, 48vw, 280px);
   box-shadow: 0 8px 22px rgba(0, 0, 0, .18);
 }
 
