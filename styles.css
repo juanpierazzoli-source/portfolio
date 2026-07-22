@@ -268,36 +268,45 @@ img { display: block; max-width: 100%; }
   display: block;
 }
 
-/* ===== Responsivo (celular): unifica, sin pantallas completas ===== */
+/* ===== Responsivo (celular): cada sección es UNA pantalla completa =====
+   Al abrir se ve solo el título (hero); trabajos, street ph y contact
+   miden lo mismo que el hero (100svh cada una) y centran su contenido. */
 @media (max-width: 600px) {
-  /* el hero deja de ocupar 100vh: el título queda arriba, cerca de los trabajos */
   .header {
-    min-height: auto;
-    justify-content: flex-start;
-    padding: 6vh 0 2vh;
+    min-height: 100vh;
+    min-height: 100svh;
+    justify-content: center;
+    padding: 0;
   }
   .header__stage { width: 94%; }
 
-  /* las secciones dejan de ocupar 100vh: se juntan */
-  .services,
-  .footer {
-    min-height: 0;
-  }
   /* títulos a sangre (hasta el corte): la sección rompe el padding de .page */
   .services {
-    padding: 3vh 0 6vh;
+    min-height: 100vh;
+    min-height: 100svh;
+    padding: 0;
     width: 100vw;
     margin-left: calc(50% - 50vw);
   }
-  .footer   { padding: 6vh 0; }
+  .footer {
+    min-height: 100vh;
+    min-height: 100svh;
+    padding: 0;
+  }
   /* en celular cada línea ocupa todo el ancho, hasta el borde (alto variable) */
   .work { max-width: 100vw; }
   .work img { height: auto; width: 100vw; max-width: 100vw; }
+
   .street {
-    padding-top: 6vh;
-    padding-bottom: 6vh;
+    min-height: 100vh;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0;
   }
-  .street__title { width: 100%; margin-bottom: 4vh; }
+  /* título estático: en una sección de una pantalla el sticky no aporta */
+  .street__title { position: static; width: 100%; margin: 0 auto 4vh; }
   .street__title--web { display: none; }     /* en celular: título de 2 líneas */
   .street__title--mob { display: block; }
   /* fotos a sangre en AMBOS lados, centrado, sin pasarse del corte */
