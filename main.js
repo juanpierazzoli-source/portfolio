@@ -113,15 +113,36 @@ function makeTrail(zone, SRCS) {
   let idx = 0, lastX = null, lastY = null;
   const active = [];
 
-  zone.addEventListener("pointermove", (e) => {
-    const rect = zone.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    if (lastX === null) { lastX = x; lastY = y; return; }
-    if (Math.hypot(x - lastX, y - lastY) < THRESH) return;
-    lastX = x; lastY = y;
-    spawn(x, y);
-  }, { passive: true });
+  /* touch (sin mouse): trail automático — fotos más chicas en posiciones
+     aleatorias con una deriva suave; solo mientras la sección está visible */
+  const touchOnly = window.matchMedia("(hover: none)").matches;
+  if (touchOnly) {
+    const STEP = 620;        // ms entre foto y foto
+    let timer = null;
+    function spawnRandom() {
+      const r = zone.getBoundingClientRect();
+      const m = 0.14;        // margen: no pegar las fotos al borde
+      const x = r.width  * (m + Math.random() * (1 - 2 * m));
+      const y = r.height * (m + Math.random() * (1 - 2 * m));
+      spawn(x, y, true);
+    }
+    const io = new IntersectionObserver((entries) => {
+      const on = entries[0].isIntersecting;
+      if (on && !timer) { spawnRandom(); timer = setInterval(spawnRandom, STEP); }
+      else if (!on && timer) { clearInterval(timer); timer = null; }
+    }, { threshold: 0.2 });
+    io.observe(zone);
+  } else {
+    zone.addEventListener("pointermove", (e) => {
+      const rect = zone.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      if (lastX === null) { lastX = x; lastY = y; return; }
+      if (Math.hypot(x - lastX, y - lastY) < THRESH) return;
+      lastX = x; lastY = y;
+      spawn(x, y);
+    }, { passive: true });
+  }
 
   function fadeOut(img) {
     if (img.dataset.out) return;
@@ -132,9 +153,9 @@ function makeTrail(zone, SRCS) {
     img.classList.add("is-out");
     setTimeout(() => img.remove(), 600);
   }
-  function spawn(x, y) {
+  function spawn(x, y, small) {
     const img = document.createElement("img");
-    img.className = "trail__img";
+    img.className = small ? "trail__img trail__img--sm" : "trail__img";
     img.src = SRCS[idx % SRCS.length];
     idx++;
     img.style.left = x + "px";
@@ -143,7 +164,17 @@ function makeTrail(zone, SRCS) {
     active.push(img);
     while (active.length > MAX) fadeOut(active[0]);
     requestAnimationFrame(() => img.classList.add("is-in"));
-    setTimeout(() => fadeOut(img), LIFE);
+    const life = small ? LIFE + 550 : LIFE;   // en auto viven un poco más
+    if (small) {
+      // deriva aleatoria: la propiedad `translate` compone con el transform del CSS
+      const dx = (Math.random() * 2 - 1) * 46;
+      const dy = (Math.random() * 2 - 1) * 46;
+      img.animate(
+        [{ translate: "0px 0px" }, { translate: dx + "px " + dy + "px" }],
+        { duration: life + 600, easing: "linear", fill: "forwards" }
+      );
+    }
+    setTimeout(() => fadeOut(img), life);
   }
 }
 // hero (título) y footer (último sector): mismo efecto, distintas fotos
@@ -155,6 +186,18 @@ function makeTrail(zone, SRCS) {
   }
   makeTrail(document.querySelector(".header"), heroSrcs);
   makeTrail(document.querySelector(".footer"), footSrcs);
+})();
+
+/* señal "swipe down": se desvanece cuando el usuario empieza a scrollear */
+(function () {
+  const hint = document.querySelector(".swipe-hint");
+  if (!hint) return;
+  window.addEventListener("scroll", function onScroll() {
+    if (window.scrollY > 60) {
+      hint.classList.add("is-hidden");
+      window.removeEventListener("scroll", onScroll);
+    }
+  }, { passive: true });
 })();
 
 

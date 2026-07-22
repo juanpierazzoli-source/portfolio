@@ -111,6 +111,18 @@ img { display: block; max-width: 100%; }
   transform: translate(-50%, -50%) scale(1.06);
   transition: opacity .55s ease, transform .55s ease;
 }
+/* variante chica: trail automático en touch */
+.trail__img--sm {
+  width: clamp(84px, 24vw, 140px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .18);
+}
+
+/* indicador sutil de scroll en celular (se oculta al scrollear) */
+.swipe-hint { display: none; }
+@keyframes swipe-nudge {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50%      { transform: translateX(-50%) translateY(4px); }
+}
 
 /* ===== Servicios (pantalla completa) ===== */
 .services {
@@ -268,13 +280,13 @@ img { display: block; max-width: 100%; }
   display: block;
 }
 
-/* ===== Responsivo (celular): cada sección es UNA pantalla completa =====
-   Al abrir se ve solo el título (hero); trabajos, street ph y contact
-   miden lo mismo que el hero (100svh cada una) y centran su contenido. */
+/* ===== Responsivo (celular): cada sección ≈ una pantalla =====
+   Al abrir se ve el título; trabajos, street ph y contact miden lo mismo
+   (90svh: un poco menos que la pantalla, así asoma la sección siguiente). */
 @media (max-width: 600px) {
   .header {
-    min-height: 100vh;
-    min-height: 100svh;
+    min-height: 90vh;
+    min-height: 90svh;
     justify-content: center;
     padding: 0;
   }
@@ -282,24 +294,43 @@ img { display: block; max-width: 100%; }
 
   /* títulos a sangre (hasta el corte): la sección rompe el padding de .page */
   .services {
-    min-height: 100vh;
-    min-height: 100svh;
+    min-height: 90vh;
+    min-height: 90svh;
     padding: 0;
     width: 100vw;
     margin-left: calc(50% - 50vw);
   }
   .footer {
-    min-height: 100vh;
-    min-height: 100svh;
+    min-height: 90vh;
+    min-height: 90svh;
     padding: 0;
   }
+
+  /* señal de scroll: chiquita, clarita, abajo al centro */
+  .swipe-hint {
+    display: block;
+    position: fixed;
+    left: 50%;
+    bottom: 10px;
+    transform: translateX(-50%);
+    z-index: 9997;
+    font-family: "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+    font-size: 10px;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: rgba(0, 0, 0, .30);
+    pointer-events: none;
+    animation: swipe-nudge 2s ease-in-out infinite;
+    transition: opacity .5s ease;
+  }
+  .swipe-hint.is-hidden { opacity: 0; }
   /* en celular cada línea ocupa todo el ancho, hasta el borde (alto variable) */
   .work { max-width: 100vw; }
   .work img { height: auto; width: 100vw; max-width: 100vw; }
 
   .street {
-    min-height: 100vh;
-    min-height: 100svh;
+    min-height: 90vh;
+    min-height: 90svh;
     display: flex;
     flex-direction: column;
     justify-content: center;
