@@ -89,6 +89,10 @@ img { display: block; max-width: 100%; }
 .trail {
   position: absolute;
   inset: 0;
+  /* rompe el padding lateral de .page: el rastro llega AL CORTE de la pantalla */
+  left: calc(50% - 50vw);
+  right: auto;
+  width: 100vw;
   overflow: hidden;
   pointer-events: none;
   z-index: 3;

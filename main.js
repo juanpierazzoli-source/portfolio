@@ -120,9 +120,9 @@ function makeTrail(zone, SRCS) {
     const STEP = 620;        // ms entre foto y foto
     let timer = null;
     function spawnRandom() {
-      const r = zone.getBoundingClientRect();
-      // sin margen: las fotos pueden caer sobre el borde y salen al corte
-      // (la capa .trail recorta con overflow: hidden)
+      // se mide la CAPA (va al corte, más ancha que la sección por el padding
+      // de .page): así las fotos cubren hasta el borde de la pantalla
+      const r = layer.getBoundingClientRect();
       const x = r.width * Math.random();
       const y = r.height * Math.random();
       spawn(x, y, true);
@@ -135,7 +135,7 @@ function makeTrail(zone, SRCS) {
     io.observe(zone);
   } else {
     zone.addEventListener("pointermove", (e) => {
-      const rect = zone.getBoundingClientRect();
+      const rect = layer.getBoundingClientRect();   // coords de la CAPA, no de la sección
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
       if (lastX === null) { lastX = x; lastY = y; return; }
@@ -423,14 +423,26 @@ function makeTrail(zone, SRCS) {
   if (window.matchMedia("(hover: none)").matches) {
     const HOLD = 3000;
     const cycle = works.filter((w) => w.dataset.src);   // los que tienen media
-    let ci = 0, timer = null;
+    let ci = 0, timer = null, stopped = false;
     function step() { activate(cycle[ci++ % cycle.length]); }
     const io = new IntersectionObserver((entries) => {
+      if (stopped) return;
       const on = entries[0].isIntersecting;
       if (on && !timer) { step(); timer = setInterval(step, HOLD); }
       else if (!on && timer) { clearInterval(timer); timer = null; reset(); }
     }, { threshold: 0.35 });
     io.observe(services);
+
+    // en cuanto el usuario toca un trabajo, el pasado automático se detiene
+    // (para siempre) y queda mostrado el que eligió
+    list.addEventListener("pointerdown", (e) => {
+      const work = e.target.closest(".work");
+      if (!work) return;
+      stopped = true;
+      if (timer) { clearInterval(timer); timer = null; }
+      io.disconnect();
+      if (work.dataset.src) activate(work);
+    });
   }
 })();
 
