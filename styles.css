@@ -323,12 +323,14 @@ img { display: block; max-width: 100%; }
     max-width: 100vw;                    /* gana al `img { max-width: 100% }` global */
     margin-left: calc(50% - 50vw);
   }
-  /* CONTACT ME: sale del posicionamiento absoluto y va en el flujo, más grande */
+  /* CONTACT ME: sale del posicionamiento absoluto y va en el flujo, más grande.
+     display:block porque un <a> estático es inline y ahí `width` no aplica */
   .footer__cm {
     position: static;
+    display: block;
     left: auto; top: auto;
-    width: 66%;
-    margin: 7vh auto 0;
+    width: 74%;
+    margin: 8vh auto 0;
   }
   /* el gif JP se posicionaba sobre el arte de desktop; acá no aplica */
   .footer__jp { display: none; }
