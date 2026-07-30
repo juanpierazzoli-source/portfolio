@@ -417,6 +417,21 @@ function makeTrail(zone, SRCS) {
   list.addEventListener("mouseleave", () => {
     if (currentWork) { currentWork = null; reset(); }
   });
+
+  /* touch (sin hover): los trabajos se pasan solos de arriba a abajo, 3s en cada
+     uno. Solo corre mientras la sección está en pantalla. */
+  if (window.matchMedia("(hover: none)").matches) {
+    const HOLD = 3000;
+    const cycle = works.filter((w) => w.dataset.src);   // los que tienen media
+    let ci = 0, timer = null;
+    function step() { activate(cycle[ci++ % cycle.length]); }
+    const io = new IntersectionObserver((entries) => {
+      const on = entries[0].isIntersecting;
+      if (on && !timer) { step(); timer = setInterval(step, HOLD); }
+      else if (!on && timer) { clearInterval(timer); timer = null; reset(); }
+    }, { threshold: 0.35 });
+    io.observe(services);
+  }
 })();
 
 

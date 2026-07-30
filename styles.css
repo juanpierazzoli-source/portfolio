@@ -248,6 +248,7 @@ img { display: block; max-width: 100%; }
   z-index: 1;                /* logo + texto + logos: por DEBAJO del rastro */
   width: 100%;
 }
+.footer__art--mob { display: none; }   /* la versión de celular solo en celular */
 /* el rastro de fotos va POR ENCIMA del footer pero POR DEBAJO del CONTACT ME */
 .footer .trail { z-index: 2; }
 
@@ -304,25 +305,33 @@ img { display: block; max-width: 100%; }
     width: 100vw;
     margin-left: calc(50% - 50vw);
   }
+  /* footer más grande que el resto de las secciones (entra el CONTACT ME) */
   .footer {
-    min-height: 90vh;
-    min-height: 90svh;
+    min-height: 112vh;
+    min-height: 112svh;
     padding: 0;
     justify-content: flex-start;   /* los márgenes auto reparten el espacio */
   }
-  /* el arte se recorta abajo del CONTACT ME (la banda de logos se saca de acá):
-     mismo archivo, ventana y 0..640 del viewBox 1089.21x956.28 */
-  .footer__brand { margin-top: auto; }
-  .footer__art {
-    aspect-ratio: 1089.21 / 640;
-    object-fit: cover;
-    object-position: top;
+  /* en celular manda el SVG propio (tipografía correcta, sin logos ni CONTACT ME) */
+  .footer__brand { width: 100%; margin-top: auto; }
+  .footer__art { display: none; }
+  .footer__art--mob {
+    display: block;
+    position: relative;
+    z-index: 1;
+    width: 100vw;                        /* el texto va AL CORTE de la pantalla */
+    margin-left: calc(50% - 50vw);
   }
-  /* CONTACT ME arranca en y=490 del SVG → 490/640 del recorte */
-  .footer__cm { top: 76.6%; }
-  /* el gif JP tapaba el logo dentro del arte completo; con el recorte no aplica */
+  /* CONTACT ME: sale del posicionamiento absoluto y va en el flujo, más grande */
+  .footer__cm {
+    position: static;
+    left: auto; top: auto;
+    width: 66%;
+    margin: 7vh auto 0;
+  }
+  /* el gif JP se posicionaba sobre el arte de desktop; acá no aplica */
   .footer__jp { display: none; }
-  /* los logos, como imagen aparte (ventana inferior del mismo SVG), al fondo */
+  /* los logos, como imagen aparte (ventana inferior del SVG de desktop), al fondo */
   .footer__logos {
     display: block;
     width: 86%;
