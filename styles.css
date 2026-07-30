@@ -115,10 +115,21 @@ img { display: block; max-width: 100%; }
   transform: translate(-50%, -50%) scale(1.06);
   transition: opacity .55s ease, transform .55s ease;
 }
-/* variante chica: trail automático en touch (2x la v1) */
+/* variante chica: trail automático en touch (2x la v1).
+   Escala FIJA: los dos "saltos" eran las transiciones de scale (0.84→1 al
+   entrar y 1→1.06 al salir). Acá solo se funde la opacidad y el movimiento
+   lo hace la deriva continua del JS, así flota parejo. */
 .trail__img--sm {
   width: clamp(168px, 48vw, 280px);
   box-shadow: 0 8px 22px rgba(0, 0, 0, .18);
+  transform: translate(-50%, -50%);
+  transition: opacity .55s ease;
+  will-change: opacity, translate;   /* `translate` es propia, no entra en transform */
+}
+.trail__img--sm.is-in  { transform: translate(-50%, -50%); }
+.trail__img--sm.is-out {
+  transform: translate(-50%, -50%);
+  transition: opacity .6s ease;
 }
 
 /* indicador sutil de scroll en celular (se oculta al scrollear) */

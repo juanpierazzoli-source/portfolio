@@ -167,9 +167,13 @@ function makeTrail(zone, SRCS) {
     requestAnimationFrame(() => img.classList.add("is-in"));
     const life = small ? LIFE + 550 : LIFE;   // en auto viven un poco más
     if (small) {
-      // deriva aleatoria: la propiedad `translate` compone con el transform del CSS
-      const dx = (Math.random() * 2 - 1) * 46;
-      const dy = (Math.random() * 2 - 1) * 46;
+      // deriva continua a velocidad constante (linear) en una dirección al azar,
+      // durante TODA la vida de la foto —fundido de salida incluido—: flota sin
+      // saltos. `translate` compone con el transform del CSS, no lo pisa.
+      const ang = Math.random() * Math.PI * 2;
+      const dist = 62;
+      const dx = Math.cos(ang) * dist;
+      const dy = Math.sin(ang) * dist;
       img.animate(
         [{ translate: "0px 0px" }, { translate: dx + "px " + dy + "px" }],
         { duration: life + 600, easing: "linear", fill: "forwards" }
