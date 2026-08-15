@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Visuales generativos — Juan Pierazzoli</title>
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+<meta name="description" content="Visuales generativos: flores, corazones y formas abstractas con movimiento orgánico. Parámetros editables en vivo." />
+<style>
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: #f6e7ec;
+    overflow: hidden;
+    font-family: ui-rounded, "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    color: #4a2d3a;
+  }
+
+  /* ===== Lienzos ===== */
+  /* capa de fondo: manchas de color muy desenfocadas (se dibuja en baja resolución) */
+  #fondo, #escena {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  #fondo { filter: blur(60px) saturate(1.15); transform: scale(1.15); }
+  #escena { z-index: 1; }
+
+  /* ===== Panel de parámetros ===== */
+  .panel {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 3;
+    width: 296px;
+    max-height: calc(100vh - 32px);
+    display: flex;
+    flex-direction: column;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 10px 40px rgba(120, 60, 90, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    overflow: hidden;
+  }
+
+  .panel__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 12px 14px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .panel__title {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .panel__toggle {
+    border: 0;
+    background: rgba(255, 255, 255, 0.7);
+    color: inherit;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .panel__body {
+    overflow-y: auto;
+    padding: 0 14px 14px;
+  }
+  .panel.is-cerrado .panel__body { display: none; }
+
+  .grupo { margin-top: 10px; }
+  .grupo__titulo {
+    margin: 0 0 6px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    opacity: 0.55;
+  }
+
+  .ctrl { margin-bottom: 9px; }
+  .ctrl__fila {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 12px;
+    margin-bottom: 3px;
+  }
+  .ctrl__valor {
+    font-variant-numeric: tabular-nums;
+    font-size: 11px;
+    opacity: 0.6;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 5px;
+    border-radius: 5px;
+    background: rgba(180, 120, 150, 0.28);
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: #ff8fb1;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(120, 60, 90, 0.35);
+    cursor: pointer;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: #ff8fb1;
+    border: 2px solid #fff;
+    cursor: pointer;
+  }
+
+  input[type="color"] {
+    width: 100%;
+    height: 26px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 8px;
+    background: none;
+    cursor: pointer;
+  }
+
+  .check {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .check input { accent-color: #ff8fb1; width: 15px; height: 15px; }
+
+  .botones {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+    margin-top: 12px;
+  }
+  .btn {
+    border: 0;
+    border-radius: 12px;
+    padding: 9px 8px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    background: #ffd9e4;
+    color: #6b3049;
+    cursor: pointer;
+    transition: transform 0.12s ease, background 0.2s ease;
+  }
+  .btn:hover { background: #ffc6d7; transform: translateY(-1px); }
+  .btn--ancho { grid-column: 1 / -1; }
+
+  .presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  .preset {
+    border: 0;
+    border-radius: 999px;
+    padding: 6px 11px;
+    font: inherit;
+    font-size: 11px;
+    background: rgba(255, 255, 255, 0.85);
+    color: #6b3049;
+    cursor: pointer;
+  }
+  .preset:hover { background: #ffe4ee; }
+
+  /* ===== Ayuda al pie ===== */
+  .ayuda {
+    position: fixed;
+    left: 16px;
+    bottom: 14px;
+    z-index: 2;
+    margin: 0;
+    font-size: 11px;
+    line-height: 1.5;
+    opacity: 0.55;
+    pointer-events: none;
+  }
+  .ayuda a { color: inherit; pointer-events: auto; }
+
+  @media (max-width: 640px) {
+    .panel { width: auto; left: 12px; right: 12px; top: 12px; }
+    .panel__body { max-height: 58vh; }
+    .ayuda { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #fondo { transform: none; }
+  }
+</style>
+</head>
+<body>
+
+  <canvas id="fondo" aria-hidden="true"></canvas>
+  <canvas id="escena" aria-label="Visual generativo con flores, corazones y formas abstractas"></canvas>
+
+  <section class="panel" id="panel">
+    <header class="panel__head" id="panelHead">
+      <h1 class="panel__title">Parámetros</h1>
+      <button class="panel__toggle" id="panelToggle" type="button" aria-label="Contraer panel">–</button>
+    </header>
+    <div class="panel__body" id="panelBody"></div>
+  </section>
+
+  <p class="ayuda">
+    Mové el mouse para atraer las formas · <b>barra espaciadora</b> pausa · <b>R</b> aleatoriza · <b>H</b> oculta el panel
+  </p>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   VISUALES GENERATIVOS — flores, corazones y formas abstractas
+   ---------------------------------------------------------------------------
+   TODO lo que se puede tocar vive en PARAMETROS (abajo). Cada entrada genera
+   automáticamente su control en el panel de la derecha, así que para sumar un
+   parámetro nuevo alcanza con agregarlo acá y usar P.<clave> en el dibujo.
+
+   Campos de cada parámetro:
+     clave  → nombre con el que se lee en el código (P.clave)
+     label  → texto visible en el panel
+     min / max / paso → rango del slider
+     valor  → valor inicial
+     tipo   → 'rango' (default) | 'color' | 'switch'
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const PARAMETROS = [
+  {
+    grupo: 'Cantidad y tamaño',
+    controles: [
+      { clave: 'cantidad',    label: 'Cantidad de formas', min: 5,  max: 260, paso: 1,    valor: 70 },
+      { clave: 'tamano',      label: 'Tamaño base',        min: 6,  max: 160, paso: 1,    valor: 46 },
+      { clave: 'variacion',   label: 'Variación de tamaño',min: 0,  max: 1,   paso: 0.01, valor: 0.55 },
+      { clave: 'latido',      label: 'Latido (respiración)', min: 0, max: 1,  paso: 0.01, valor: 0.28 },
+    ]
+  },
+  {
+    grupo: 'Mezcla de formas',
+    controles: [
+      { clave: 'pesoFlores',    label: 'Flores',            min: 0, max: 10, paso: 0.1, valor: 5 },
+      { clave: 'pesoCorazones', label: 'Corazones',         min: 0, max: 10, paso: 0.1, valor: 3 },
+      { clave: 'pesoBlobs',     label: 'Manchas abstractas',min: 0, max: 10, paso: 0.1, valor: 2.5 },
+      { clave: 'petalos',       label: 'Pétalos por flor',  min: 3, max: 14, paso: 1,   valor: 6 },
+      { clave: 'filoPetalo',    label: 'Filo del pétalo',   min: 0.2, max: 2.2, paso: 0.05, valor: 0.6 },
+      { clave: 'deformacion',   label: 'Deformación orgánica', min: 0, max: 0.6, paso: 0.01, valor: 0.22 },
+    ]
+  },
+  {
+    grupo: 'Movimiento',
+    controles: [
+      { clave: 'velocidad',   label: 'Velocidad',            min: 0, max: 4,   paso: 0.05, valor: 1 },
+      { clave: 'fluidez',     label: 'Escala del flujo',     min: 0.2, max: 6, paso: 0.1,  valor: 1.6 },
+      { clave: 'turbulencia', label: 'Turbulencia',          min: 0, max: 3,   paso: 0.05, valor: 1 },
+      { clave: 'deriva',      label: 'Deriva vertical',      min: -1.5, max: 1.5, paso: 0.05, valor: -0.25 },
+      { clave: 'giro',        label: 'Giro de las formas',   min: 0, max: 3,   paso: 0.05, valor: 0.6 },
+      { clave: 'iman',        label: 'Imán del mouse',       min: -2, max: 3,  paso: 0.05, valor: 1 },
+    ]
+  },
+  {
+    grupo: 'Color',
+    controles: [
+      { clave: 'tonoBase',    label: 'Tono base',        min: 0, max: 360, paso: 1,    valor: 335 },
+      { clave: 'rangoTono',   label: 'Rango de tonos',   min: 0, max: 180, paso: 1,    valor: 70 },
+      { clave: 'derivaTono',  label: 'Deriva del tono',  min: 0, max: 20,  paso: 0.5,  valor: 1.5 },
+      { clave: 'saturacion',  label: 'Saturación',       min: 0, max: 100, paso: 1,    valor: 85 },
+      { clave: 'luminosidad', label: 'Luminosidad',      min: 20, max: 95, paso: 1,    valor: 66 },
+      { clave: 'opacidad',    label: 'Opacidad',         min: 0.05, max: 1, paso: 0.01, valor: 0.8 },
+      { clave: 'fondo',       label: 'Color de fondo',   tipo: 'color', valor: '#fff4f7' },
+      { clave: 'auras',       label: 'Manchas de fondo', min: 0, max: 1, paso: 0.01, valor: 0.5 },
+    ]
+  },
+  {
+    grupo: 'Atmósfera',
+    controles: [
+      { clave: 'estela',    label: 'Estela',            min: 0, max: 0.99, paso: 0.01, valor: 0.9 },
+      { clave: 'brillo',    label: 'Brillo (glow)',     min: 0, max: 60,   paso: 1,    valor: 18 },
+      { clave: 'contorno',  label: 'Contorno',          min: 0, max: 6,    paso: 0.1,  valor: 0 },
+      { clave: 'corazon',   label: 'Corazón de la flor',tipo: 'switch',    valor: true },
+      { clave: 'brillitos', label: 'Brillitos',         tipo: 'switch',    valor: true },
+    ]
+  }
+];
+
+/* Combinaciones listas para usar (solo pisan las claves que nombran) */
+const PRESETS = {
+  'Tierno':    {},                                    // valores iniciales
+  'Jardín':    { pesoFlores: 9, pesoCorazones: 1, pesoBlobs: 2, petalos: 8, tonoBase: 315, rangoTono: 120, cantidad: 110, tamano: 38, velocidad: 0.7, estela: 0.86 },
+  'Amor':      { pesoFlores: 1, pesoCorazones: 9, pesoBlobs: 0.5, tonoBase: 350, rangoTono: 30, saturacion: 90, luminosidad: 72, cantidad: 60, tamano: 52, latido: 0.45, brillo: 30 },
+  'Sueño':     { cantidad: 40, tamano: 110, velocidad: 0.35, turbulencia: 0.4, opacidad: 0.28, estela: 0.97, brillo: 40, tonoBase: 260, rangoTono: 120, luminosidad: 85, deformacion: 0.4, pesoBlobs: 8 },
+  'Caramelo':  { tonoBase: 40, rangoTono: 170, saturacion: 95, luminosidad: 80, cantidad: 140, tamano: 26, velocidad: 1.8, turbulencia: 1.8, giro: 2, estela: 0.8 },
+  'Caos':      { cantidad: 200, tamano: 20, velocidad: 3, turbulencia: 2.6, fluidez: 4.5, giro: 2.6, estela: 0.72, rangoTono: 180, deformacion: 0.5 }
+};
+
+/* ═══════════════════ Estado ═══════════════════ */
+
+const P = {};                                  // valores en vivo (P.cantidad, P.tonoBase, …)
+const DEFECTOS = {};                           // copia de los valores iniciales
+PARAMETROS.forEach(g => g.controles.forEach(c => { P[c.clave] = c.valor; DEFECTOS[c.clave] = c.valor; }));
+
+const escena = document.getElementById('escena');
+const ctx = escena.getContext('2d');
+const fondo = document.getElementById('fondo');
+const fctx = fondo.getContext('2d');
+
+let W = 0, H = 0, DPR = 1;
+let formas = [];
+let auras = [];
+let brillitos = [];
+let tiempo = 0;
+let pausado = false;
+let mouse = { x: -9999, y: -9999, activo: false };
+
+/* ═══════════════════ Utilidades ═══════════════════ */
+
+const azar  = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+/* redondea al paso del slider y limpia la basura de coma flotante (0.30000000004) */
+function alPaso(v, paso) {
+  const dec = (String(paso).split('.')[1] || '').length;
+  return parseFloat((Math.round(v / paso) * paso).toFixed(dec));
+}
+
+function hexARgb(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+
+/* Campo de flujo orgánico.
+   Se parte de un potencial escalar (suma de senos) y se toma su rotor:
+   velocidad = (∂ψ/∂v, -∂ψ/∂u). Al tener divergencia cero, el campo no genera
+   sumideros, así que las formas fluyen en remolinos SIN amontonarse en una
+   banda. Trabajamos en coordenadas normalizadas para que el resultado no
+   dependa de la escala elegida en el slider. */
+function potencial(u, v, t) {
+  return Math.sin(u + t * 0.30) * Math.cos(v * 1.1 - t * 0.22)
+       + 0.6 * Math.sin((u + v) * 0.7 + t * 0.17)
+       + 0.4 * Math.cos((u - v) * 1.3 - t * 0.13);
+}
+
+function campoDeFlujo(x, y, t) {
+  const s = P.fluidez * 0.0016;
+  const u = x * s, v = y * s, e = 0.02;
+  return {
+    x:  (potencial(u, v + e, t) - potencial(u, v - e, t)) / (2 * e),
+    y: -(potencial(u + e, v, t) - potencial(u - e, v, t)) / (2 * e)
+  };
+}
+
+/* ═══════════════════ Formas ═══════════════════ */
+
+function trazarFlor(g, r, petalos, filo, deform, fase) {
+  const pasos = 140;
+  g.beginPath();
+  for (let i = 0; i <= pasos; i++) {
+    const t = (i / pasos) * Math.PI * 2;
+    const petalo = Math.pow(Math.abs(Math.cos(petalos * t * 0.5)), filo);
+    const onda = 1 + deform * Math.sin(3 * t + fase) * 0.5;
+    const rad = r * (0.34 + 0.66 * petalo) * onda;
+    const x = Math.cos(t) * rad, y = Math.sin(t) * rad;
+    i ? g.lineTo(x, y) : g.moveTo(x, y);
+  }
+  g.closePath();
+}
+
+function trazarCorazon(g, r, deform, fase) {
+  const pasos = 90;
+  g.beginPath();
+  for (let i = 0; i <= pasos; i++) {
+    const t = (i / pasos) * Math.PI * 2;
+    const x = 16 * Math.pow(Math.sin(t), 3);
+    const y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+    const onda = 1 + deform * Math.sin(2 * t + fase) * 0.4;
+    const px = (x / 17) * r * onda, py = (-y / 17) * r * onda;
+    i ? g.lineTo(px, py) : g.moveTo(px, py);
+  }
+  g.closePath();
+}
+
+function trazarMancha(g, r, deform, fase, semilla) {
+  const pasos = 100;
+  g.beginPath();
+  for (let i = 0; i <= pasos; i++) {
+    const t = (i / pasos) * Math.PI * 2;
+    const onda = 1
+      + (0.25 + deform) * Math.sin(3 * t + semilla + fase)
+      + (0.16 + deform * 0.6) * Math.sin(5 * t - semilla * 1.7 + fase * 0.8)
+      + 0.08 * Math.sin(7 * t + fase * 1.3);
+    const rad = r * 0.72 * onda;
+    const x = Math.cos(t) * rad, y = Math.sin(t) * rad;
+    i ? g.lineTo(x, y) : g.moveTo(x, y);
+  }
+  g.closePath();
+}
+
+/* ═══════════════════ Población ═══════════════════ */
+
+function tipoAlAzar() {
+  const total = P.pesoFlores + P.pesoCorazones + P.pesoBlobs;
+  if (total <= 0) return 'flor';
+  const r = Math.random() * total;
+  if (r < P.pesoFlores) return 'flor';
+  if (r < P.pesoFlores + P.pesoCorazones) return 'corazon';
+  return 'mancha';
+}
+
+function nuevaForma(dentro = true) {
+  return {
+    x: dentro ? azar(0, W) : azar(-0.1 * W, 1.1 * W),
+    y: dentro ? azar(0, H) : azar(-0.1 * H, 1.1 * H),
+    vx: 0, vy: 0,
+    tipo: tipoAlAzar(),
+    escala: azar(0.35, 1),            // se multiplica por P.tamano
+    angulo: azar(0, Math.PI * 2),
+    giro: azar(-1, 1),
+    fase: azar(0, Math.PI * 2),
+    ritmo: azar(0.5, 1.6),
+    tono: Math.random(),              // 0..1 → se mapea al rango de tonos
+    semilla: azar(0, Math.PI * 2)
+  };
+}
+
+function ajustarPoblacion() {
+  const objetivo = Math.round(P.cantidad);
+  while (formas.length < objetivo) formas.push(nuevaForma(false));
+  if (formas.length > objetivo) formas.length = objetivo;
+}
+
+function rehacerTipos() {
+  formas.forEach(f => { f.tipo = tipoAlAzar(); });
+}
+
+function crearAuras() {
+  auras = Array.from({ length: 5 }, () => ({
+    x: Math.random(), y: Math.random(),
+    r: azar(0.28, 0.6),
+    vx: azar(-0.00008, 0.00008),
+    vy: azar(-0.00008, 0.00008),
+    tono: Math.random()
+  }));
+}
+
+/* ═══════════════════ Dibujo ═══════════════════ */
+
+function dibujarFondo(dt) {
+  const { r, g, b } = hexARgb(P.fondo);
+  fctx.setTransform(1, 0, 0, 1, 0, 0);
+  fctx.fillStyle = `rgb(${r},${g},${b})`;
+  fctx.fillRect(0, 0, fondo.width, fondo.height);
+
+  if (P.auras <= 0.001) return;
+
+  fctx.globalCompositeOperation = 'source-over';
+  auras.forEach(a => {
+    if (!pausado) {
+      a.x += a.vx * dt * 60; a.y += a.vy * dt * 60;
+      if (a.x < -0.3 || a.x > 1.3) a.vx *= -1;
+      if (a.y < -0.3 || a.y > 1.3) a.vy *= -1;
+    }
+    const cx = a.x * fondo.width;
+    const cy = a.y * fondo.height;
+    const rad = a.r * Math.max(fondo.width, fondo.height);
+    const tono = (P.tonoBase + (a.tono - 0.5) * P.rangoTono * 1.6 + tiempo * P.derivaTono) % 360;
+    const grad = fctx.createRadialGradient(cx, cy, 0, cx, cy, rad);
+    grad.addColorStop(0, `hsla(${tono}, ${P.saturacion}%, ${clamp(P.luminosidad + 8, 0, 96)}%, ${0.55 * P.auras})`);
+    grad.addColorStop(1, `hsla(${tono}, ${P.saturacion}%, ${P.luminosidad}%, 0)`);
+    fctx.fillStyle = grad;
+    fctx.beginPath();
+    fctx.arc(cx, cy, rad, 0, Math.PI * 2);
+    fctx.fill();
+  });
+}
+
+function dibujarForma(f) {
+  const pulso = 1 + P.latido * Math.sin(tiempo * f.ritmo * 1.6 + f.fase);
+  const r = P.tamano * (1 - P.variacion + P.variacion * f.escala * 2) * 0.5 * pulso;
+  if (r <= 0.4) return;
+
+  const tono = (P.tonoBase + (f.tono - 0.5) * P.rangoTono + tiempo * P.derivaTono) % 360;
+  const color = `hsla(${tono}, ${P.saturacion}%, ${P.luminosidad}%, ${P.opacidad})`;
+
+  ctx.save();
+  ctx.translate(f.x, f.y);
+  ctx.rotate(f.angulo);
+
+  if (P.brillo > 0) {
+    ctx.shadowBlur = P.brillo;
+    ctx.shadowColor = `hsla(${tono}, ${P.saturacion}%, ${clamp(P.luminosidad + 6, 0, 96)}%, 0.9)`;
+  }
+  ctx.fillStyle = color;
+
+  if (f.tipo === 'flor')          trazarFlor(ctx, r, Math.round(P.petalos), P.filoPetalo, P.deformacion, f.fase + tiempo * 0.4);
+  else if (f.tipo === 'corazon')  trazarCorazon(ctx, r, P.deformacion, f.fase + tiempo * 0.5);
+  else                            trazarMancha(ctx, r, P.deformacion, tiempo * 0.35 + f.fase, f.semilla);
+
+  ctx.fill();
+
+  if (P.contorno > 0) {
+    ctx.shadowBlur = 0;
+    ctx.lineWidth = P.contorno;
+    ctx.strokeStyle = `hsla(${(tono + 20) % 360}, ${P.saturacion}%, ${clamp(P.luminosidad - 30, 0, 90)}%, ${clamp(P.opacidad + 0.2, 0, 1)})`;
+    ctx.stroke();
+  }
+
+  /* corazón de la flor: círculo cálido en el centro */
+  if (P.corazon && f.tipo === 'flor') {
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = `hsla(${(tono + 45) % 360}, ${clamp(P.saturacion + 10, 0, 100)}%, ${clamp(P.luminosidad - 18, 10, 95)}%, ${clamp(P.opacidad + 0.25, 0, 1)})`;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+function dibujarBrillitos(dt) {
+  if (!P.brillitos) return;
+  if (!pausado && brillitos.length < 90 && Math.random() < 0.5) {
+    brillitos.push({ x: azar(0, W), y: azar(0, H), r: azar(1, 3.4), vida: 1, ritmo: azar(0.4, 1.2) });
+  }
+  ctx.shadowBlur = 0;
+  for (let i = brillitos.length - 1; i >= 0; i--) {
+    const b = brillitos[i];
+    if (!pausado) b.vida -= dt * 0.35 * b.ritmo;
+    if (b.vida <= 0) { brillitos.splice(i, 1); continue; }
+    const a = Math.sin(b.vida * Math.PI) * 0.9;
+    ctx.fillStyle = `hsla(${(P.tonoBase + 30) % 360}, 100%, 96%, ${a})`;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+/* ═══════════════════ Simulación ═══════════════════ */
+
+const RADIO_IMAN = 320;   // alcance del mouse, en px
+
+function actualizar(dt) {
+  const margen = P.tamano * 1.2 + 60;
+
+  formas.forEach(f => {
+    const c = campoDeFlujo(f.x, f.y, tiempo);
+
+    /* velocidad "deseada": flujo + deriva vertical */
+    let objVx = c.x * P.turbulencia * 95;
+    let objVy = c.y * P.turbulencia * 95 + P.deriva * 90;
+
+    /* Imán del mouse (negativo = repele). La componente tangencial hace que
+       las formas ORBITEN el cursor en vez de colapsar todas en el mismo punto,
+       y adentro de los 70 px la atracción radial se apaga. */
+    if (mouse.activo && P.iman !== 0) {
+      const dx = mouse.x - f.x, dy = mouse.y - f.y;
+      const d = Math.hypot(dx, dy) || 1;
+      if (d < RADIO_IMAN) {
+        const caida = 1 - d / RADIO_IMAN;
+        const nucleo = clamp((d - 70) / 70, 0, 1);
+        const radial = P.iman * 190 * caida * nucleo;
+        const tang   = Math.abs(P.iman) * 210 * caida;
+        objVx += (dx / d) * radial + (-dy / d) * tang;
+        objVy += (dy / d) * radial + ( dx / d) * tang;
+      }
+    }
+
+    /* inercia: la velocidad persigue a la deseada, nunca salta de golpe */
+    const k = 1 - Math.pow(0.2, dt);
+    f.vx += (objVx - f.vx) * k;
+    f.vy += (objVy - f.vy) * k;
+
+    f.x += f.vx * P.velocidad * dt;
+    f.y += f.vy * P.velocidad * dt;
+    f.angulo += f.giro * P.giro * dt * 0.6;
+
+    /* envolver por los bordes (el lienzo es un toro) */
+    if (f.x < -margen) f.x = W + margen; else if (f.x > W + margen) f.x = -margen;
+    if (f.y < -margen) f.y = H + margen; else if (f.y > H + margen) f.y = -margen;
+  });
+}
+
+let ultimo = performance.now();
+
+function bucle(ahora) {
+  const dt = Math.min((ahora - ultimo) / 1000, 0.05);
+  ultimo = ahora;
+  if (!pausado) tiempo += dt;
+
+  dibujarFondo(dt);
+
+  /* estela: en vez de borrar, se destiñe lo dibujado antes */
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.fillStyle = `rgba(0,0,0,${clamp(1 - P.estela, 0.01, 1)})`;
+  ctx.fillRect(0, 0, W, H);
+  ctx.globalCompositeOperation = 'source-over';
+
+  if (!pausado) actualizar(dt);
+  formas.forEach(dibujarForma);
+  dibujarBrillitos(dt);
+
+  requestAnimationFrame(bucle);
+}
+
+/* ═══════════════════ Lienzos y eventos ═══════════════════ */
+
+function redimensionar() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = window.innerWidth;
+  H = window.innerHeight;
+
+  escena.width = Math.round(W * DPR);
+  escena.height = Math.round(H * DPR);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+  /* el fondo se dibuja chico y el CSS lo estira con blur: mucho más barato */
+  fondo.width = Math.round(W * 0.16);
+  fondo.height = Math.round(H * 0.16);
+}
+
+window.addEventListener('resize', redimensionar);
+window.addEventListener('pointermove', e => { mouse.x = e.clientX; mouse.y = e.clientY; mouse.activo = true; });
+document.addEventListener('mouseleave', () => { mouse.activo = false; });
+window.addEventListener('blur', () => { mouse.activo = false; });
+
+window.addEventListener('keydown', e => {
+  if (e.target.matches('input, button')) return;
+  if (e.code === 'Space') { e.preventDefault(); pausado = !pausado; }
+  if (e.key.toLowerCase() === 'r') aleatorizar();
+  if (e.key.toLowerCase() === 'h') panel.classList.toggle('is-cerrado');
+});
+
+/* ═══════════════════ Panel ═══════════════════ */
+
+const panel = document.getElementById('panel');
+const panelBody = document.getElementById('panelBody');
+const panelToggle = document.getElementById('panelToggle');
+const refs = {};   // clave → { input, salida }
+
+function construirPanel() {
+  PARAMETROS.forEach(grupo => {
+    const cont = document.createElement('div');
+    cont.className = 'grupo';
+    cont.innerHTML = `<h2 class="grupo__titulo">${grupo.grupo}</h2>`;
+
+    grupo.controles.forEach(c => {
+      const fila = document.createElement('div');
+      fila.className = 'ctrl';
+
+      if (c.tipo === 'switch') {
+        fila.innerHTML = `<label class="check"><input type="checkbox" ${c.valor ? 'checked' : ''}> ${c.label}</label>`;
+        const input = fila.querySelector('input');
+        input.addEventListener('change', () => aplicar(c.clave, input.checked));
+        refs[c.clave] = { input };
+      } else if (c.tipo === 'color') {
+        fila.innerHTML = `<div class="ctrl__fila"><span>${c.label}</span></div>
+                          <input type="color" value="${c.valor}">`;
+        const input = fila.querySelector('input');
+        input.addEventListener('input', () => aplicar(c.clave, input.value));
+        refs[c.clave] = { input };
+      } else {
+        fila.innerHTML = `<div class="ctrl__fila"><span>${c.label}</span><span class="ctrl__valor"></span></div>
+                          <input type="range" min="${c.min}" max="${c.max}" step="${c.paso}" value="${c.valor}">`;
+        const input = fila.querySelector('input');
+        const salida = fila.querySelector('.ctrl__valor');
+        salida.textContent = c.valor;
+        input.addEventListener('input', () => aplicar(c.clave, parseFloat(input.value)));
+        refs[c.clave] = { input, salida };
+      }
+
+      cont.appendChild(fila);
+    });
+
+    panelBody.appendChild(cont);
+  });
+
+  /* presets + botones */
+  const extra = document.createElement('div');
+  extra.className = 'grupo';
+  extra.innerHTML = `<h2 class="grupo__titulo">Presets</h2>
+                     <div class="presets">${Object.keys(PRESETS).map(n => `<button class="preset" type="button" data-preset="${n}">${n}</button>`).join('')}</div>
+                     <div class="botones">
+                       <button class="btn" type="button" id="btnAzar">Aleatorizar</button>
+                       <button class="btn" type="button" id="btnPausa">Pausar</button>
+                       <button class="btn" type="button" id="btnReset">Reiniciar</button>
+                       <button class="btn" type="button" id="btnSemillas">Resembrar</button>
+                       <button class="btn btn--ancho" type="button" id="btnPng">Guardar PNG</button>
+                     </div>`;
+  panelBody.appendChild(extra);
+
+  extra.querySelectorAll('[data-preset]').forEach(b => {
+    b.addEventListener('click', () => aplicarPreset(b.dataset.preset));
+  });
+  document.getElementById('btnAzar').addEventListener('click', aleatorizar);
+  document.getElementById('btnReset').addEventListener('click', () => { setValores(DEFECTOS); resembrar(); });
+  document.getElementById('btnSemillas').addEventListener('click', resembrar);
+  document.getElementById('btnPng').addEventListener('click', guardarPNG);
+  const btnPausa = document.getElementById('btnPausa');
+  btnPausa.addEventListener('click', () => {
+    pausado = !pausado;
+    btnPausa.textContent = pausado ? 'Seguir' : 'Pausar';
+  });
+}
+
+function aplicar(clave, valor) {
+  P[clave] = valor;
+  const r = refs[clave];
+  if (r && r.salida) r.salida.textContent = valor;
+  if (clave === 'cantidad') ajustarPoblacion();
+  if (clave === 'pesoFlores' || clave === 'pesoCorazones' || clave === 'pesoBlobs') rehacerTipos();
+}
+
+function setValores(valores) {
+  Object.entries(valores).forEach(([clave, valor]) => {
+    const r = refs[clave];
+    if (!r) return;
+    if (r.input.type === 'checkbox') r.input.checked = valor;
+    else r.input.value = valor;
+    aplicar(clave, valor);
+  });
+}
+
+function aplicarPreset(nombre) {
+  setValores(DEFECTOS);
+  setValores(PRESETS[nombre] || {});
+  resembrar();
+}
+
+function aleatorizar() {
+  const nuevos = {};
+  PARAMETROS.forEach(g => g.controles.forEach(c => {
+    if (c.tipo === 'switch') nuevos[c.clave] = Math.random() < 0.7;
+    else if (c.tipo === 'color') return;                       // el fondo se respeta
+    else if (c.clave === 'cantidad')    nuevos[c.clave] = Math.round(azar(30, 150));
+    else if (c.clave === 'estela')      nuevos[c.clave] = alPaso(azar(0.72, 0.97), c.paso);
+    else if (c.clave === 'opacidad')    nuevos[c.clave] = alPaso(azar(0.35, 0.95), c.paso);
+    else if (c.clave === 'luminosidad') nuevos[c.clave] = alPaso(azar(45, 82), c.paso);
+    else if (c.clave === 'velocidad')   nuevos[c.clave] = alPaso(azar(0.3, 2), c.paso);
+    else nuevos[c.clave] = alPaso(azar(c.min, c.max), c.paso);
+  }));
+  setValores(nuevos);
+  resembrar();
+}
+
+function resembrar() {
+  formas = [];
+  ajustarPoblacion();
+  crearAuras();
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+}
+
+/* Exporta lo que se ve: fondo desenfocado + escena, en una sola imagen */
+function guardarPNG() {
+  const salida = document.createElement('canvas');
+  salida.width = escena.width;
+  salida.height = escena.height;
+  const g = salida.getContext('2d');
+  g.filter = 'blur(60px) saturate(1.15)';
+  g.drawImage(fondo, -salida.width * 0.075, -salida.height * 0.075, salida.width * 1.15, salida.height * 1.15);
+  g.filter = 'none';
+  g.drawImage(escena, 0, 0);
+
+  const a = document.createElement('a');
+  a.download = `visual-${Date.now()}.png`;
+  a.href = salida.toDataURL('image/png');
+  a.click();
+}
+
+panelToggle.addEventListener('click', e => {
+  e.stopPropagation();
+  panel.classList.toggle('is-cerrado');
+  panelToggle.textContent = panel.classList.contains('is-cerrado') ? '+' : '–';
+});
+document.getElementById('panelHead').addEventListener('click', () => panelToggle.click());
+
+/* ═══════════════════ Arranque ═══════════════════ */
+
+construirPanel();
+redimensionar();
+resembrar();
+requestAnimationFrame(bucle);
+</script>
+</body>
+</html>
