@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Visuales generativos — Juan Pierazzoli</title>
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
-<meta name="description" content="Visuales generativos: flores, corazones y formas abstractas con movimiento orgánico. Parámetros editables en vivo." />
+<meta name="description" content="Visuales generativos: flores, corazones, calaveras y diablitos con movimiento orgánico. Parámetros editables en vivo y export a PNG y video." />
 <style>
   * { box-sizing: border-box; }
 
@@ -13,16 +13,33 @@
     margin: 0;
     padding: 0;
     height: 100%;
-    background: #f6e7ec;
+    background: #14101a;
     overflow: hidden;
     font-family: ui-rounded, "Avenir Next", "Segoe UI", system-ui, sans-serif;
     color: #4a2d3a;
   }
 
-  /* ===== Lienzos ===== */
-  /* capa de fondo: manchas de color muy desenfocadas (se dibuja en baja resolución) */
-  #fondo, #escena {
+  /* ===== Escenario (recorta el desenfoque del fondo al formato elegido) ===== */
+  .escenario {
     position: fixed;
+    overflow: hidden;
+    background: #fff;
+    transition: box-shadow 0.25s ease;
+  }
+  .escenario.is-encuadrado { box-shadow: 0 20px 70px rgba(0, 0, 0, 0.55); }
+
+  /* damero: se ve solo en pantalla, marca que el fondo es transparente */
+  .escenario.is-transparente {
+    background-color: #fbfbfd;
+    background-image:
+      linear-gradient(45deg, #e3e3ec 25%, transparent 25%, transparent 75%, #e3e3ec 75%),
+      linear-gradient(45deg, #e3e3ec 25%, transparent 25%, transparent 75%, #e3e3ec 75%);
+    background-size: 24px 24px;
+    background-position: 0 0, 12px 12px;
+  }
+
+  #fondo, #escena {
+    position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
@@ -36,16 +53,16 @@
     position: fixed;
     top: 16px;
     right: 16px;
-    z-index: 3;
-    width: 296px;
+    z-index: 4;
+    width: 300px;
     max-height: calc(100vh - 32px);
     display: flex;
     flex-direction: column;
     border-radius: 22px;
-    background: rgba(255, 255, 255, 0.72);
+    background: rgba(255, 255, 255, 0.82);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
-    box-shadow: 0 10px 40px rgba(120, 60, 90, 0.18);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
     border: 1px solid rgba(255, 255, 255, 0.8);
     overflow: hidden;
   }
@@ -78,15 +95,12 @@
     cursor: pointer;
   }
 
-  .panel__body {
-    overflow-y: auto;
-    padding: 0 14px 14px;
-  }
+  .panel__body { overflow-y: auto; padding: 0 14px 14px; }
   .panel.is-cerrado .panel__body { display: none; }
 
-  .grupo { margin-top: 10px; }
+  .grupo { margin-top: 12px; }
   .grupo__titulo {
-    margin: 0 0 6px;
+    margin: 0 0 7px;
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.14em;
@@ -103,11 +117,7 @@
     font-size: 12px;
     margin-bottom: 3px;
   }
-  .ctrl__valor {
-    font-variant-numeric: tabular-nums;
-    font-size: 11px;
-    opacity: 0.6;
-  }
+  .ctrl__valor { font-variant-numeric: tabular-nums; font-size: 11px; opacity: 0.6; }
 
   input[type="range"] {
     -webkit-appearance: none;
@@ -115,7 +125,7 @@
     width: 100%;
     height: 5px;
     border-radius: 5px;
-    background: rgba(180, 120, 150, 0.28);
+    background: rgba(120, 90, 110, 0.28);
     outline: none;
   }
   input[type="range"]::-webkit-slider-thumb {
@@ -125,105 +135,114 @@
     border-radius: 50%;
     background: #ff8fb1;
     border: 2px solid #fff;
-    box-shadow: 0 1px 4px rgba(120, 60, 90, 0.35);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
     cursor: pointer;
   }
   input[type="range"]::-moz-range-thumb {
-    width: 13px;
-    height: 13px;
-    border-radius: 50%;
-    background: #ff8fb1;
-    border: 2px solid #fff;
-    cursor: pointer;
+    width: 13px; height: 13px; border-radius: 50%;
+    background: #ff8fb1; border: 2px solid #fff; cursor: pointer;
   }
 
   input[type="color"] {
-    width: 100%;
-    height: 26px;
-    padding: 0;
+    width: 100%; height: 26px; padding: 0;
     border: 1px solid rgba(255, 255, 255, 0.9);
-    border-radius: 8px;
-    background: none;
-    cursor: pointer;
+    border-radius: 8px; background: none; cursor: pointer;
   }
 
-  .check {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    font-size: 12px;
-    cursor: pointer;
-  }
+  .check { display: flex; align-items: center; gap: 7px; font-size: 12px; cursor: pointer; }
   .check input { accent-color: #ff8fb1; width: 15px; height: 15px; }
 
-  .botones {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 7px;
-    margin-top: 12px;
-  }
-  .btn {
-    border: 0;
-    border-radius: 12px;
-    padding: 9px 8px;
-    font: inherit;
-    font-size: 12px;
-    font-weight: 600;
-    background: #ffd9e4;
-    color: #6b3049;
-    cursor: pointer;
-    transition: transform 0.12s ease, background 0.2s ease;
-  }
-  .btn:hover { background: #ffc6d7; transform: translateY(-1px); }
-  .btn--ancho { grid-column: 1 / -1; }
+  .fila-botones { display: flex; flex-wrap: wrap; gap: 6px; }
+  .fila-botones[hidden] { display: none; }   /* [hidden] pierde contra la clase */
 
-  .presets {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 4px;
-  }
-  .preset {
+  .chip {
     border: 0;
     border-radius: 999px;
     padding: 6px 11px;
     font: inherit;
     font-size: 11px;
-    background: rgba(255, 255, 255, 0.85);
-    color: #6b3049;
+    background: rgba(255, 255, 255, 0.9);
+    color: #5a2f45;
     cursor: pointer;
+    transition: background 0.15s ease;
   }
-  .preset:hover { background: #ffe4ee; }
+  .chip:hover { background: #ffe4ee; }
+  .chip.is-activo { background: #2c2233; color: #fff; }
+  .chip__punto {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 5px;
+    vertical-align: -1px;
+  }
 
-  /* ===== Ayuda al pie ===== */
+  .botones { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 8px; }
+  .btn {
+    border: 0; border-radius: 12px; padding: 9px 8px;
+    font: inherit; font-size: 12px; font-weight: 600;
+    background: #ffd9e4; color: #6b3049; cursor: pointer;
+    transition: transform 0.12s ease, background 0.2s ease;
+  }
+  .btn:hover { background: #ffc6d7; transform: translateY(-1px); }
+  .btn:disabled { opacity: 0.45; cursor: default; transform: none; }
+  .btn--ancho { grid-column: 1 / -1; }
+  .btn--rec { background: #ffb3b3; }
+  .btn--rec.is-grabando { background: #e0233a; color: #fff; }
+
+  .nota { margin: 7px 0 0; font-size: 10.5px; line-height: 1.45; opacity: 0.55; }
+
+  /* ===== Indicador de grabación ===== */
+  .rec {
+    position: fixed;
+    left: 16px; top: 16px;
+    z-index: 5;
+    display: none;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 13px;
+    border-radius: 999px;
+    background: rgba(224, 35, 58, 0.92);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+  }
+  .rec.is-visible { display: flex; }
+  .rec__punto {
+    width: 9px; height: 9px; border-radius: 50%; background: #fff;
+    animation: latir 1s ease-in-out infinite;
+  }
+  @keyframes latir { 50% { opacity: 0.25; } }
+
   .ayuda {
     position: fixed;
-    left: 16px;
-    bottom: 14px;
-    z-index: 2;
+    left: 16px; bottom: 14px;
+    z-index: 4;
     margin: 0;
     font-size: 11px;
     line-height: 1.5;
-    opacity: 0.55;
+    color: #fff;
+    opacity: 0.45;
     pointer-events: none;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
   }
-  .ayuda a { color: inherit; pointer-events: auto; }
 
-  @media (max-width: 640px) {
+  @media (max-width: 680px) {
     .panel { width: auto; left: 12px; right: 12px; top: 12px; }
-    .panel__body { max-height: 58vh; }
+    .panel__body { max-height: 56vh; }
     .ayuda { display: none; }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    #fondo { transform: none; }
   }
 </style>
 </head>
 <body>
 
-  <canvas id="fondo" aria-hidden="true"></canvas>
-  <canvas id="escena" aria-label="Visual generativo con flores, corazones y formas abstractas"></canvas>
+  <div class="escenario" id="escenario">
+    <canvas id="fondo" aria-hidden="true"></canvas>
+    <canvas id="escena" aria-label="Visual generativo con flores, corazones, calaveras y diablitos"></canvas>
+  </div>
+
+  <div class="rec" id="rec"><span class="rec__punto"></span><span id="recTiempo">0:00</span></div>
 
   <section class="panel" id="panel">
     <header class="panel__head" id="panelHead">
@@ -234,16 +253,20 @@
   </section>
 
   <p class="ayuda">
-    Mové el mouse para atraer las formas · <b>barra espaciadora</b> pausa · <b>R</b> aleatoriza · <b>H</b> oculta el panel
+    Mové el mouse para atraer las formas · <b>espacio</b> pausa · <b>R</b> aleatoriza · <b>H</b> oculta el panel
   </p>
 
 <script>
 /* ═══════════════════════════════════════════════════════════════════════════
-   VISUALES GENERATIVOS — flores, corazones y formas abstractas
+   VISUALES GENERATIVOS
    ---------------------------------------------------------------------------
-   TODO lo que se puede tocar vive en PARAMETROS (abajo). Cada entrada genera
-   automáticamente su control en el panel de la derecha, así que para sumar un
-   parámetro nuevo alcanza con agregarlo acá y usar P.<clave> en el dibujo.
+   Un solo sistema para todo: las formas (flores, corazones, manchas,
+   calaveras, diablitos), la paleta y el formato de export son parámetros del
+   mismo motor, no modos separados.
+
+   TODO lo que se puede tocar vive en PARAMETROS. Cada entrada genera sola su
+   control en el panel, así que para sumar un parámetro nuevo alcanza con
+   agregarlo acá y leerlo como P.<clave> en el dibujo.
 
    Campos de cada parámetro:
      clave  → nombre con el que se lee en el código (P.clave)
@@ -257,39 +280,42 @@ const PARAMETROS = [
   {
     grupo: 'Cantidad y tamaño',
     controles: [
-      { clave: 'cantidad',    label: 'Cantidad de formas', min: 5,  max: 260, paso: 1,    valor: 70 },
-      { clave: 'tamano',      label: 'Tamaño base',        min: 6,  max: 160, paso: 1,    valor: 46 },
-      { clave: 'variacion',   label: 'Variación de tamaño',min: 0,  max: 1,   paso: 0.01, valor: 0.55 },
-      { clave: 'latido',      label: 'Latido (respiración)', min: 0, max: 1,  paso: 0.01, valor: 0.28 },
+      { clave: 'cantidad',    label: 'Cantidad de formas',   min: 5,  max: 260, paso: 1,    valor: 70 },
+      { clave: 'tamano',      label: 'Tamaño base',          min: 6,  max: 160, paso: 1,    valor: 46 },
+      { clave: 'variacion',   label: 'Variación de tamaño',  min: 0,  max: 1,   paso: 0.01, valor: 0.55 },
+      { clave: 'latido',      label: 'Latido (respiración)', min: 0,  max: 1,   paso: 0.01, valor: 0.28 },
     ]
   },
   {
     grupo: 'Mezcla de formas',
     controles: [
-      { clave: 'pesoFlores',    label: 'Flores',            min: 0, max: 10, paso: 0.1, valor: 5 },
-      { clave: 'pesoCorazones', label: 'Corazones',         min: 0, max: 10, paso: 0.1, valor: 3 },
-      { clave: 'pesoBlobs',     label: 'Manchas abstractas',min: 0, max: 10, paso: 0.1, valor: 2.5 },
-      { clave: 'petalos',       label: 'Pétalos por flor',  min: 3, max: 14, paso: 1,   valor: 6 },
-      { clave: 'filoPetalo',    label: 'Filo del pétalo',   min: 0.2, max: 2.2, paso: 0.05, valor: 0.6 },
-      { clave: 'deformacion',   label: 'Deformación orgánica', min: 0, max: 0.6, paso: 0.01, valor: 0.22 },
+      { clave: 'pesoFlores',    label: 'Flores',              min: 0, max: 10, paso: 0.1, valor: 5 },
+      { clave: 'pesoCorazones', label: 'Corazones',           min: 0, max: 10, paso: 0.1, valor: 3 },
+      { clave: 'pesoManchas',   label: 'Manchas abstractas',  min: 0, max: 10, paso: 0.1, valor: 2.5 },
+      { clave: 'pesoCalaveras', label: 'Calaveras',           min: 0, max: 10, paso: 0.1, valor: 0 },
+      { clave: 'pesoDiablitos', label: 'Diablitos',           min: 0, max: 10, paso: 0.1, valor: 0 },
+      { clave: 'petalos',       label: 'Pétalos por flor',    min: 3, max: 14, paso: 1,   valor: 6 },
+      { clave: 'filoPetalo',    label: 'Filo del pétalo',     min: 0.2, max: 2.2, paso: 0.05, valor: 0.6 },
+      { clave: 'deformacion',   label: 'Deformación orgánica',min: 0, max: 0.6, paso: 0.01, valor: 0.22 },
     ]
   },
   {
     grupo: 'Movimiento',
     controles: [
-      { clave: 'velocidad',   label: 'Velocidad',            min: 0, max: 4,   paso: 0.05, valor: 1 },
-      { clave: 'fluidez',     label: 'Escala del flujo',     min: 0.2, max: 6, paso: 0.1,  valor: 1.6 },
-      { clave: 'turbulencia', label: 'Turbulencia',          min: 0, max: 3,   paso: 0.05, valor: 1 },
-      { clave: 'deriva',      label: 'Deriva vertical',      min: -1.5, max: 1.5, paso: 0.05, valor: -0.25 },
-      { clave: 'giro',        label: 'Giro de las formas',   min: 0, max: 3,   paso: 0.05, valor: 0.6 },
-      { clave: 'iman',        label: 'Imán del mouse',       min: -2, max: 3,  paso: 0.05, valor: 1 },
+      { clave: 'velocidad',   label: 'Velocidad',          min: 0, max: 4,   paso: 0.05, valor: 1 },
+      { clave: 'fluidez',     label: 'Escala del flujo',   min: 0.2, max: 6, paso: 0.1,  valor: 1.6 },
+      { clave: 'turbulencia', label: 'Turbulencia',        min: 0, max: 3,   paso: 0.05, valor: 1 },
+      { clave: 'deriva',      label: 'Deriva vertical',    min: -1.5, max: 1.5, paso: 0.05, valor: -0.25 },
+      { clave: 'giro',        label: 'Giro de las formas', min: 0, max: 3,   paso: 0.05, valor: 0.6 },
+      { clave: 'iman',        label: 'Imán del mouse',     min: -2, max: 3,  paso: 0.05, valor: 1 },
     ]
   },
   {
     grupo: 'Color',
     controles: [
       { clave: 'tonoBase',    label: 'Tono base',        min: 0, max: 360, paso: 1,    valor: 335 },
-      { clave: 'rangoTono',   label: 'Rango de tonos',   min: 0, max: 180, paso: 1,    valor: 70 },
+      { clave: 'rangoTono',   label: 'Rango de tonos',   min: 0, max: 360, paso: 1,    valor: 70 },
+      { clave: 'pasosColor',  label: 'Pasos de color',   min: 0, max: 8,   paso: 1,    valor: 0 },
       { clave: 'derivaTono',  label: 'Deriva del tono',  min: 0, max: 20,  paso: 0.5,  valor: 1.5 },
       { clave: 'saturacion',  label: 'Saturación',       min: 0, max: 100, paso: 1,    valor: 85 },
       { clave: 'luminosidad', label: 'Luminosidad',      min: 20, max: 95, paso: 1,    valor: 66 },
@@ -301,40 +327,79 @@ const PARAMETROS = [
   {
     grupo: 'Atmósfera',
     controles: [
-      { clave: 'estela',    label: 'Estela',            min: 0, max: 0.99, paso: 0.01, valor: 0.9 },
-      { clave: 'brillo',    label: 'Brillo (glow)',     min: 0, max: 60,   paso: 1,    valor: 18 },
-      { clave: 'contorno',  label: 'Contorno',          min: 0, max: 6,    paso: 0.1,  valor: 0 },
-      { clave: 'corazon',   label: 'Corazón de la flor',tipo: 'switch',    valor: true },
-      { clave: 'brillitos', label: 'Brillitos',         tipo: 'switch',    valor: true },
+      { clave: 'estela',    label: 'Estela',           min: 0, max: 0.99, paso: 0.01, valor: 0.9 },
+      { clave: 'brillo',    label: 'Brillo (glow)',    min: 0, max: 60,   paso: 1,    valor: 18 },
+      { clave: 'contorno',  label: 'Contorno',         min: 0, max: 6,    paso: 0.1,  valor: 0 },
+      { clave: 'detalles',  label: 'Detalles internos (centros, ojos, dientes)', tipo: 'switch', valor: true },
+      { clave: 'brillitos', label: 'Brillitos',        tipo: 'switch',    valor: true },
+      { clave: 'sinFondo',  label: 'Sin fondo (exporta con transparencia)', tipo: 'switch', valor: false },
     ]
   }
 ];
 
-/* Combinaciones listas para usar (solo pisan las claves que nombran) */
+/* Universos: solo tocan los pesos de las formas */
+const UNIVERSOS = {
+  'Tierno': { pesoFlores: 5, pesoCorazones: 3, pesoManchas: 2.5, pesoCalaveras: 0, pesoDiablitos: 0 },
+  'Punk':   { pesoFlores: 0, pesoCorazones: 1, pesoManchas: 1.5, pesoCalaveras: 5, pesoDiablitos: 4 },
+  'Mixto':  { pesoFlores: 3, pesoCorazones: 2.5, pesoManchas: 2, pesoCalaveras: 2.5, pesoDiablitos: 2 }
+};
+
+/* Paletas: solo tocan color, fondo y brillo.
+   'pasosColor' > 0 corta el rango de tonos en escalones (RGB puro, fluo, etc.). */
+const PALETAS = {
+  'Pastel':  { muestra: '#ffc2d6', tonoBase: 335, rangoTono: 90,  pasosColor: 0, saturacion: 75, luminosidad: 76, opacidad: 0.8,  derivaTono: 1.5, fondo: '#fff4f7', auras: 0.5, brillo: 16 },
+  'Chicle':  { muestra: '#ff5fa2', tonoBase: 320, rangoTono: 140, pasosColor: 0, saturacion: 95, luminosidad: 62, opacidad: 0.85, derivaTono: 3,   fondo: '#fff0fb', auras: 0.65, brillo: 20 },
+  'RGB':     { muestra: '#00ff66', tonoBase: 120, rangoTono: 360, pasosColor: 3, saturacion: 100, luminosidad: 50, opacidad: 0.85, derivaTono: 0,  fondo: '#0a0a10', auras: 0.35, brillo: 30 },
+  'Fluo':    { muestra: '#39ff14', tonoBase: 150, rangoTono: 300, pasosColor: 5, saturacion: 100, luminosidad: 58, opacidad: 0.9,  derivaTono: 2,  fondo: '#0d0618', auras: 0.5,  brillo: 46 },
+  'Ácido':   { muestra: '#d9ff00', tonoBase: 75,  rangoTono: 120, pasosColor: 4, saturacion: 100, luminosidad: 55, opacidad: 0.88, derivaTono: 6,  fondo: '#12100a', auras: 0.6,  brillo: 38 },
+  'Noche':   { muestra: '#8f7bff', tonoBase: 265, rangoTono: 120, pasosColor: 0, saturacion: 70,  luminosidad: 72, opacidad: 0.5,  derivaTono: 1,  fondo: '#0b0a1c', auras: 0.75, brillo: 34 }
+};
+
+/* Presets: combinación completa (pisan solo las claves que nombran) */
 const PRESETS = {
-  'Tierno':    {},                                    // valores iniciales
-  'Jardín':    { pesoFlores: 9, pesoCorazones: 1, pesoBlobs: 2, petalos: 8, tonoBase: 315, rangoTono: 120, cantidad: 110, tamano: 38, velocidad: 0.7, estela: 0.86 },
-  'Amor':      { pesoFlores: 1, pesoCorazones: 9, pesoBlobs: 0.5, tonoBase: 350, rangoTono: 30, saturacion: 90, luminosidad: 72, cantidad: 60, tamano: 52, latido: 0.45, brillo: 30 },
-  'Sueño':     { cantidad: 40, tamano: 110, velocidad: 0.35, turbulencia: 0.4, opacidad: 0.28, estela: 0.97, brillo: 40, tonoBase: 260, rangoTono: 120, luminosidad: 85, deformacion: 0.4, pesoBlobs: 8 },
-  'Caramelo':  { tonoBase: 40, rangoTono: 170, saturacion: 95, luminosidad: 80, cantidad: 140, tamano: 26, velocidad: 1.8, turbulencia: 1.8, giro: 2, estela: 0.8 },
-  'Caos':      { cantidad: 200, tamano: 20, velocidad: 3, turbulencia: 2.6, fluidez: 4.5, giro: 2.6, estela: 0.72, rangoTono: 180, deformacion: 0.5 }
+  'Tierno':   {},
+  'Jardín':   { ...UNIVERSOS['Tierno'], pesoFlores: 9, pesoCorazones: 1, petalos: 8, tonoBase: 315, rangoTono: 120, cantidad: 110, tamano: 38, velocidad: 0.7, estela: 0.86 },
+  'Amor':     { ...UNIVERSOS['Tierno'], pesoFlores: 1, pesoCorazones: 9, pesoManchas: 0.5, tonoBase: 350, rangoTono: 30, saturacion: 90, luminosidad: 64, cantidad: 60, tamano: 52, latido: 0.45, brillo: 30 },
+  'Sueño':    { ...UNIVERSOS['Tierno'], pesoManchas: 8, cantidad: 40, tamano: 110, velocidad: 0.35, turbulencia: 0.4, opacidad: 0.28, estela: 0.97, brillo: 40, tonoBase: 260, rangoTono: 120, luminosidad: 78, deformacion: 0.4 },
+  'Punk':     { ...UNIVERSOS['Punk'], ...PALETAS['Fluo'], cantidad: 55, tamano: 62, velocidad: 1.4, turbulencia: 1.4, giro: 1.2, latido: 0.35, estela: 0.84, deformacion: 0.3, contorno: 0 },
+  'Cumbia':   { ...UNIVERSOS['Mixto'], ...PALETAS['RGB'], cantidad: 120, tamano: 34, velocidad: 2, turbulencia: 2, giro: 2, estela: 0.8 },
+  'Caramelo': { ...UNIVERSOS['Tierno'], ...PALETAS['Chicle'], tonoBase: 40, rangoTono: 170, cantidad: 140, tamano: 26, velocidad: 1.8, turbulencia: 1.8, giro: 2, estela: 0.8 },
+  'Caos':     { ...UNIVERSOS['Mixto'], cantidad: 200, tamano: 20, velocidad: 3, turbulencia: 2.6, fluidez: 4.5, giro: 2.6, estela: 0.72, rangoTono: 180, deformacion: 0.5 }
+};
+
+/* Formatos de encuadre y export. 'libre' usa toda la ventana. */
+const FORMATOS = {
+  'Pantalla': { ratio: null,     ancho: 0,    alto: 0 },
+  '16:9':     { ratio: 16 / 9,   ancho: 1920, alto: 1080 },
+  '1:1':      { ratio: 1,        ancho: 1080, alto: 1080 }
+};
+
+/* Con 'sin fondo' el archivo exportado sale sin la aguada de color. Qué queda
+   en su lugar lo decide el matte: transparencia real (WebM VP9 / PNG) o un
+   color plano para cromar en el editor. */
+const MATTES = {
+  'Transparente': null,
+  'Verde':        '#00b140',
+  'Magenta':      '#ff00ff',
+  'Negro':        '#000000'
 };
 
 /* ═══════════════════ Estado ═══════════════════ */
 
-const P = {};                                  // valores en vivo (P.cantidad, P.tonoBase, …)
-const DEFECTOS = {};                           // copia de los valores iniciales
+const P = {};
+const DEFECTOS = {};
 PARAMETROS.forEach(g => g.controles.forEach(c => { P[c.clave] = c.valor; DEFECTOS[c.clave] = c.valor; }));
 
+const escenario = document.getElementById('escenario');
 const escena = document.getElementById('escena');
 const ctx = escena.getContext('2d');
 const fondo = document.getElementById('fondo');
 const fctx = fondo.getContext('2d');
 
 let W = 0, H = 0, DPR = 1;
-let formas = [];
-let auras = [];
-let brillitos = [];
+let formato = 'Pantalla';
+let matte = 'Transparente';
+let formas = [], auras = [], brillitos = [];
 let tiempo = 0;
 let pausado = false;
 let mouse = { x: -9999, y: -9999, activo: false };
@@ -359,7 +424,7 @@ function hexARgb(hex) {
    Se parte de un potencial escalar (suma de senos) y se toma su rotor:
    velocidad = (∂ψ/∂v, -∂ψ/∂u). Al tener divergencia cero, el campo no genera
    sumideros, así que las formas fluyen en remolinos SIN amontonarse en una
-   banda. Trabajamos en coordenadas normalizadas para que el resultado no
+   banda. Se calcula en coordenadas normalizadas para que el resultado no
    dependa de la escala elegida en el slider. */
 function potencial(u, v, t) {
   return Math.sin(u + t * 0.30) * Math.cos(v * 1.1 - t * 0.22)
@@ -376,7 +441,10 @@ function campoDeFlujo(x, y, t) {
   };
 }
 
-/* ═══════════════════ Formas ═══════════════════ */
+/* ═══════════════════ Formas ═══════════════════
+   Cada trazado deja un path listo para fill/stroke, centrado en (0,0) y
+   escalado por r. Los "detalles" (centro de la flor, ojos, dientes) se dibujan
+   aparte con un tono más oscuro del mismo color. */
 
 function trazarFlor(g, r, petalos, filo, deform, fase) {
   const pasos = 140;
@@ -422,14 +490,90 @@ function trazarMancha(g, r, deform, fase, semilla) {
   g.closePath();
 }
 
+function trazarCalavera(g, R) {
+  g.beginPath();
+  g.moveTo(-0.78 * R, -0.02 * R);
+  g.bezierCurveTo(-0.90 * R, -1.00 * R,  0.90 * R, -1.00 * R,  0.78 * R, -0.02 * R);  // cráneo
+  g.bezierCurveTo( 0.76 * R,  0.30 * R,  0.56 * R,  0.36 * R,  0.50 * R,  0.46 * R);  // sien derecha
+  g.lineTo( 0.44 * R, 0.90 * R);
+  g.quadraticCurveTo(0, 1.14 * R, -0.44 * R, 0.90 * R);                               // mandíbula
+  g.lineTo(-0.50 * R, 0.46 * R);
+  g.bezierCurveTo(-0.56 * R, 0.36 * R, -0.76 * R, 0.30 * R, -0.78 * R, -0.02 * R);
+  g.closePath();
+}
+
+function detallesCalavera(g, R, oscuro) {
+  g.fillStyle = oscuro;
+  [-1, 1].forEach(lado => {
+    g.save();
+    g.translate(lado * 0.34 * R, -0.18 * R);
+    g.rotate(lado * 0.2);
+    g.beginPath();
+    g.ellipse(0, 0, 0.25 * R, 0.30 * R, 0, 0, Math.PI * 2);
+    g.fill();
+    g.restore();
+  });
+  g.beginPath();                                   // nariz
+  g.moveTo(0, 0.10 * R);
+  g.lineTo(0.13 * R, 0.36 * R);
+  g.lineTo(-0.13 * R, 0.36 * R);
+  g.closePath();
+  g.fill();
+  for (let i = -1; i <= 1; i++) {                  // dientes
+    g.fillRect(i * 0.21 * R - 0.035 * R, 0.58 * R, 0.07 * R, 0.30 * R);
+  }
+  g.fillRect(-0.32 * R, 0.60 * R, 0.64 * R, 0.05 * R);
+}
+
+function trazarDiablito(g, R) {
+  g.beginPath();
+  g.moveTo(-0.70 * R, -0.40 * R);
+  g.quadraticCurveTo(-1.06 * R, -1.10 * R, -0.34 * R, -0.86 * R);   // cuerno izquierdo
+  g.quadraticCurveTo(0, -1.04 * R, 0.34 * R, -0.86 * R);            // frente
+  g.quadraticCurveTo( 1.06 * R, -1.10 * R,  0.70 * R, -0.40 * R);   // cuerno derecho
+  g.quadraticCurveTo( 0.98 * R,  0.28 * R,  0.42 * R,  0.66 * R);   // mejilla derecha
+  g.quadraticCurveTo(0, 1.08 * R, -0.42 * R, 0.66 * R);             // pera
+  g.quadraticCurveTo(-0.98 * R,  0.28 * R, -0.70 * R, -0.40 * R);
+  g.closePath();
+}
+
+function detallesDiablito(g, R, oscuro) {
+  g.fillStyle = oscuro;
+  [-1, 1].forEach(lado => {                        // ojos rasgados
+    g.beginPath();
+    g.moveTo(lado * 0.54 * R, -0.30 * R);
+    g.lineTo(lado * 0.14 * R, -0.08 * R);
+    g.lineTo(lado * 0.50 * R,  0.04 * R);
+    g.closePath();
+    g.fill();
+  });
+  g.strokeStyle = oscuro;                          // sonrisa
+  g.lineWidth = Math.max(1, 0.09 * R);
+  g.lineCap = 'round';
+  g.beginPath();
+  g.arc(0, 0.14 * R, 0.36 * R, 0.16 * Math.PI, 0.84 * Math.PI);
+  g.stroke();
+}
+
+/* factor de tamaño por tipo: calaveras y diablitos necesitan un poco más para
+   que se lean los detalles */
+const FACTOR = { flor: 1, corazon: 1, mancha: 1, calavera: 1.1, diablito: 1.1 };
+
 /* ═══════════════════ Población ═══════════════════ */
 
+const PESOS = [
+  ['flor', 'pesoFlores'], ['corazon', 'pesoCorazones'], ['mancha', 'pesoManchas'],
+  ['calavera', 'pesoCalaveras'], ['diablito', 'pesoDiablitos']
+];
+
 function tipoAlAzar() {
-  const total = P.pesoFlores + P.pesoCorazones + P.pesoBlobs;
-  if (total <= 0) return 'flor';
-  const r = Math.random() * total;
-  if (r < P.pesoFlores) return 'flor';
-  if (r < P.pesoFlores + P.pesoCorazones) return 'corazon';
+  const total = PESOS.reduce((s, [, k]) => s + P[k], 0);
+  if (total <= 0) return 'mancha';
+  let r = Math.random() * total;
+  for (const [tipo, k] of PESOS) {
+    r -= P[k];
+    if (r <= 0) return tipo;
+  }
   return 'mancha';
 }
 
@@ -439,12 +583,12 @@ function nuevaForma(dentro = true) {
     y: dentro ? azar(0, H) : azar(-0.1 * H, 1.1 * H),
     vx: 0, vy: 0,
     tipo: tipoAlAzar(),
-    escala: azar(0.35, 1),            // se multiplica por P.tamano
+    escala: azar(0.35, 1),
     angulo: azar(0, Math.PI * 2),
     giro: azar(-1, 1),
     fase: azar(0, Math.PI * 2),
     ritmo: azar(0.5, 1.6),
-    tono: Math.random(),              // 0..1 → se mapea al rango de tonos
+    tono: Math.random(),
     semilla: azar(0, Math.PI * 2)
   };
 }
@@ -455,9 +599,7 @@ function ajustarPoblacion() {
   if (formas.length > objetivo) formas.length = objetivo;
 }
 
-function rehacerTipos() {
-  formas.forEach(f => { f.tipo = tipoAlAzar(); });
-}
+function rehacerTipos() { formas.forEach(f => { f.tipo = tipoAlAzar(); }); }
 
 function crearAuras() {
   auras = Array.from({ length: 5 }, () => ({
@@ -469,27 +611,42 @@ function crearAuras() {
   }));
 }
 
+/* ═══════════════════ Color ═══════════════════ */
+
+/* Un solo camino de color para todo. Con pasosColor = 0 el tono es continuo;
+   con 2..8 el rango se corta en escalones (así salen el RGB puro y los fluo). */
+function tonoDe(semilla) {
+  let base;
+  if (P.pasosColor >= 2) {
+    const paso = P.rangoTono / P.pasosColor;
+    const indice = Math.min(Math.floor(semilla * P.pasosColor), P.pasosColor - 1);
+    base = P.tonoBase - P.rangoTono / 2 + indice * paso + paso / 2;
+  } else {
+    base = P.tonoBase + (semilla - 0.5) * P.rangoTono;
+  }
+  return ((base + tiempo * P.derivaTono) % 360 + 360) % 360;
+}
+
 /* ═══════════════════ Dibujo ═══════════════════ */
 
 function dibujarFondo(dt) {
-  const { r, g, b } = hexARgb(P.fondo);
   fctx.setTransform(1, 0, 0, 1, 0, 0);
+  if (P.sinFondo) { fctx.clearRect(0, 0, fondo.width, fondo.height); return; }
+
+  const { r, g, b } = hexARgb(P.fondo);
   fctx.fillStyle = `rgb(${r},${g},${b})`;
   fctx.fillRect(0, 0, fondo.width, fondo.height);
-
   if (P.auras <= 0.001) return;
 
-  fctx.globalCompositeOperation = 'source-over';
   auras.forEach(a => {
     if (!pausado) {
       a.x += a.vx * dt * 60; a.y += a.vy * dt * 60;
       if (a.x < -0.3 || a.x > 1.3) a.vx *= -1;
       if (a.y < -0.3 || a.y > 1.3) a.vy *= -1;
     }
-    const cx = a.x * fondo.width;
-    const cy = a.y * fondo.height;
+    const cx = a.x * fondo.width, cy = a.y * fondo.height;
     const rad = a.r * Math.max(fondo.width, fondo.height);
-    const tono = (P.tonoBase + (a.tono - 0.5) * P.rangoTono * 1.6 + tiempo * P.derivaTono) % 360;
+    const tono = tonoDe(a.tono);
     const grad = fctx.createRadialGradient(cx, cy, 0, cx, cy, rad);
     grad.addColorStop(0, `hsla(${tono}, ${P.saturacion}%, ${clamp(P.luminosidad + 8, 0, 96)}%, ${0.55 * P.auras})`);
     grad.addColorStop(1, `hsla(${tono}, ${P.saturacion}%, ${P.luminosidad}%, 0)`);
@@ -502,11 +659,12 @@ function dibujarFondo(dt) {
 
 function dibujarForma(f) {
   const pulso = 1 + P.latido * Math.sin(tiempo * f.ritmo * 1.6 + f.fase);
-  const r = P.tamano * (1 - P.variacion + P.variacion * f.escala * 2) * 0.5 * pulso;
+  const r = P.tamano * (1 - P.variacion + P.variacion * f.escala * 2) * 0.5 * pulso * FACTOR[f.tipo];
   if (r <= 0.4) return;
 
-  const tono = (P.tonoBase + (f.tono - 0.5) * P.rangoTono + tiempo * P.derivaTono) % 360;
+  const tono = tonoDe(f.tono);
   const color = `hsla(${tono}, ${P.saturacion}%, ${P.luminosidad}%, ${P.opacidad})`;
+  const oscuro = `hsla(${(tono + 12) % 360}, ${clamp(P.saturacion - 5, 0, 100)}%, ${clamp(P.luminosidad - 42, 6, 90)}%, ${clamp(P.opacidad + 0.15, 0, 1)})`;
 
   ctx.save();
   ctx.translate(f.x, f.y);
@@ -518,26 +676,41 @@ function dibujarForma(f) {
   }
   ctx.fillStyle = color;
 
-  if (f.tipo === 'flor')          trazarFlor(ctx, r, Math.round(P.petalos), P.filoPetalo, P.deformacion, f.fase + tiempo * 0.4);
-  else if (f.tipo === 'corazon')  trazarCorazon(ctx, r, P.deformacion, f.fase + tiempo * 0.5);
-  else                            trazarMancha(ctx, r, P.deformacion, tiempo * 0.35 + f.fase, f.semilla);
+  if (f.tipo === 'flor') {
+    trazarFlor(ctx, r, Math.round(P.petalos), P.filoPetalo, P.deformacion, f.fase + tiempo * 0.4);
+  } else if (f.tipo === 'corazon') {
+    trazarCorazon(ctx, r, P.deformacion, f.fase + tiempo * 0.5);
+  } else if (f.tipo === 'mancha') {
+    trazarMancha(ctx, r, P.deformacion, tiempo * 0.35 + f.fase, f.semilla);
+  } else {
+    /* calaveras y diablitos: la deformación se aplica como squash & stretch
+       para no romper la silueta, que es lo que las hace reconocibles */
+    const s = P.deformacion * 0.35 * Math.sin(tiempo * 0.9 + f.fase);
+    ctx.scale(1 + s, 1 - s);
+    (f.tipo === 'calavera' ? trazarCalavera : trazarDiablito)(ctx, r * 0.9);
+  }
 
   ctx.fill();
 
   if (P.contorno > 0) {
     ctx.shadowBlur = 0;
     ctx.lineWidth = P.contorno;
-    ctx.strokeStyle = `hsla(${(tono + 20) % 360}, ${P.saturacion}%, ${clamp(P.luminosidad - 30, 0, 90)}%, ${clamp(P.opacidad + 0.2, 0, 1)})`;
+    ctx.strokeStyle = oscuro;
     ctx.stroke();
   }
 
-  /* corazón de la flor: círculo cálido en el centro */
-  if (P.corazon && f.tipo === 'flor') {
+  if (P.detalles) {
     ctx.shadowBlur = 0;
-    ctx.fillStyle = `hsla(${(tono + 45) % 360}, ${clamp(P.saturacion + 10, 0, 100)}%, ${clamp(P.luminosidad - 18, 10, 95)}%, ${clamp(P.opacidad + 0.25, 0, 1)})`;
-    ctx.beginPath();
-    ctx.arc(0, 0, r * 0.22, 0, Math.PI * 2);
-    ctx.fill();
+    if (f.tipo === 'flor') {
+      ctx.fillStyle = `hsla(${(tono + 45) % 360}, ${clamp(P.saturacion + 10, 0, 100)}%, ${clamp(P.luminosidad - 18, 10, 95)}%, ${clamp(P.opacidad + 0.25, 0, 1)})`;
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.22, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (f.tipo === 'calavera') {
+      detallesCalavera(ctx, r * 0.9, oscuro);
+    } else if (f.tipo === 'diablito') {
+      detallesDiablito(ctx, r * 0.9, oscuro);
+    }
   }
 
   ctx.restore();
@@ -553,8 +726,7 @@ function dibujarBrillitos(dt) {
     const b = brillitos[i];
     if (!pausado) b.vida -= dt * 0.35 * b.ritmo;
     if (b.vida <= 0) { brillitos.splice(i, 1); continue; }
-    const a = Math.sin(b.vida * Math.PI) * 0.9;
-    ctx.fillStyle = `hsla(${(P.tonoBase + 30) % 360}, 100%, 96%, ${a})`;
+    ctx.fillStyle = `hsla(${(P.tonoBase + 30) % 360}, 100%, 96%, ${Math.sin(b.vida * Math.PI) * 0.9})`;
     ctx.beginPath();
     ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
     ctx.fill();
@@ -571,7 +743,6 @@ function actualizar(dt) {
   formas.forEach(f => {
     const c = campoDeFlujo(f.x, f.y, tiempo);
 
-    /* velocidad "deseada": flujo + deriva vertical */
     let objVx = c.x * P.turbulencia * 95;
     let objVy = c.y * P.turbulencia * 95 + P.deriva * 90;
 
@@ -626,27 +797,244 @@ function bucle(ahora) {
   formas.forEach(dibujarForma);
   dibujarBrillitos(dt);
 
+  if (grabando) volcarCuadro();
+
   requestAnimationFrame(bucle);
 }
 
-/* ═══════════════════ Lienzos y eventos ═══════════════════ */
+/* ═══════════════════ Encuadre y lienzos ═══════════════════ */
 
+/* Con formato fijo el escenario deja de ser la ventana entera: es una caja
+   centrada con esa proporción, y la simulación corre adentro. Lo que se ve es
+   exactamente lo que se exporta. */
 function redimensionar() {
-  DPR = Math.min(window.devicePixelRatio || 1, 2);
-  W = window.innerWidth;
-  H = window.innerHeight;
+  const f = FORMATOS[formato];
+  const antesW = W, antesH = H;
+  const dispW = window.innerWidth, dispH = window.innerHeight;
+  let bw = dispW, bh = dispH, bx = 0, by = 0;
 
-  escena.width = Math.round(W * DPR);
+  if (f.ratio) {
+    const margen = dispW < 680 ? 12 : 34;
+    const dispoW = dispW - margen * 2, dispoH = dispH - margen * 2;
+    bw = Math.min(dispoW, dispoH * f.ratio);
+    bh = bw / f.ratio;
+    bx = (dispW - bw) / 2;
+    by = (dispH - bh) / 2;
+  }
+
+  escenario.classList.toggle('is-encuadrado', !!f.ratio);
+  escenario.style.left   = `${bx}px`;
+  escenario.style.top    = `${by}px`;
+  escenario.style.width  = `${bw}px`;
+  escenario.style.height = `${bh}px`;
+
+  W = Math.round(bw);
+  H = Math.round(bh);
+
+  /* Al cambiar de tamaño o de formato, las formas se reacomodan en proporción:
+     así la composición sobrevive el cambio. Si antes no había tamaño (primer
+     layout, ventana todavía en 0), se resiembran para que no queden todas
+     apiladas en la esquina. */
+  if (formas.length) {
+    if (antesW > 0 && antesH > 0) {
+      const kx = W / antesW, ky = H / antesH;
+      formas.forEach(f => { f.x *= kx; f.y *= ky; });
+    } else {
+      formas.forEach(f => { f.x = azar(0, W); f.y = azar(0, H); });
+    }
+  }
+
+  /* al grabar se sube la resolución interna para que el video salga nítido
+     sin cambiar nada de lo que se ve en pantalla */
+  DPR = grabando
+    ? destino().ancho / W
+    : Math.min(window.devicePixelRatio || 1, 2);
+
+  escena.width  = Math.round(W * DPR);
   escena.height = Math.round(H * DPR);
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
 
   /* el fondo se dibuja chico y el CSS lo estira con blur: mucho más barato */
-  fondo.width = Math.round(W * 0.16);
-  fondo.height = Math.round(H * 0.16);
+  fondo.width  = Math.max(8, Math.round(W * 0.16));
+  fondo.height = Math.max(8, Math.round(H * 0.16));
 }
 
-window.addEventListener('resize', redimensionar);
-window.addEventListener('pointermove', e => { mouse.x = e.clientX; mouse.y = e.clientY; mouse.activo = true; });
+function ponerFormato(nombre) {
+  if (grabando) return;
+  formato = nombre;
+  document.querySelectorAll('[data-formato]').forEach(b => {
+    b.classList.toggle('is-activo', b.dataset.formato === nombre);
+  });
+  redimensionar();
+  actualizarNota();
+}
+
+/* ═══════════════════ Export (PNG y video) ═══════════════════ */
+
+/* Tamaño real de salida: el del formato, o la ventana redondeada a par
+   (los códecs de video piden dimensiones pares). */
+function destino() {
+  const f = FORMATOS[formato];
+  if (f.ratio) return { ancho: f.ancho, alto: f.alto };
+  const escala = Math.min(2, window.devicePixelRatio || 1);
+  return {
+    ancho: Math.round(W * escala / 2) * 2,
+    alto:  Math.round(H * escala / 2) * 2
+  };
+}
+
+const auxiliar = document.createElement('canvas');
+const auxCtx = auxiliar.getContext('2d');
+
+/* Rehace en un lienzo lo mismo que muestra el CSS: fondo desenfocado + escena.
+   El desenfoque se aplica en un lienzo intermedio chico (el fondo ya es una
+   textura de baja resolución), así el costo por cuadro sigue siendo bajo. */
+function componer(g, ancho, alto) {
+  const color = P.sinFondo ? MATTES[matte] : null;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.clearRect(0, 0, ancho, alto);
+
+  if (P.sinFondo) {
+    /* sin aguada de color: o queda transparente, o se rellena con el matte */
+    if (color) { g.fillStyle = color; g.fillRect(0, 0, ancho, alto); }
+    g.imageSmoothingEnabled = true;
+    g.imageSmoothingQuality = 'high';
+    g.drawImage(escena, 0, 0, ancho, alto);
+    return;
+  }
+
+  const k = ancho / W;                       // escala respecto de lo que se ve
+  auxiliar.width  = Math.max(8, Math.round(ancho * 0.25));
+  auxiliar.height = Math.max(8, Math.round(alto  * 0.25));
+  auxCtx.setTransform(1, 0, 0, 1, 0, 0);
+  auxCtx.clearRect(0, 0, auxiliar.width, auxiliar.height);
+  auxCtx.filter = `blur(${Math.max(1, 60 * k * 0.25)}px) saturate(1.15)`;
+  auxCtx.drawImage(fondo,
+    -auxiliar.width * 0.075, -auxiliar.height * 0.075,
+    auxiliar.width * 1.15, auxiliar.height * 1.15);
+  auxCtx.filter = 'none';
+
+  g.imageSmoothingEnabled = true;
+  g.imageSmoothingQuality = 'high';
+  g.drawImage(auxiliar, 0, 0, ancho, alto);
+  g.drawImage(escena, 0, 0, ancho, alto);
+}
+
+function descargar(url, nombre) {
+  const a = document.createElement('a');
+  a.download = nombre;
+  a.href = url;
+  a.click();
+}
+
+function guardarPNG() {
+  const { ancho, alto } = destino();
+  const salida = document.createElement('canvas');
+  salida.width = ancho; salida.height = alto;
+  componer(salida.getContext('2d'), ancho, alto);
+  descargar(salida.toDataURL('image/png'), `visual-${ancho}x${alto}-${Date.now()}.png`);
+}
+
+/* --- Video ---
+   Se graba un lienzo aparte del tamaño de salida: cada cuadro se compone ahí
+   y se empuja al stream con requestFrame(), así el video no depende de que el
+   navegador capture a tiempo. */
+const MIMES = [
+  'video/mp4;codecs=avc1.42E01E',
+  'video/mp4',
+  'video/webm;codecs=vp9',
+  'video/webm;codecs=vp8',
+  'video/webm'
+];
+const DURACION_MAX = 60;   // segundos: corta sola para no comerse la memoria
+
+let grabando = false;
+let grabador = null, pistaVideo = null, trozos = [], grabCanvas = null, grabCtx = null;
+let inicioGrabacion = 0, ultimoVolcado = 0;
+
+const recBadge = document.getElementById('rec');
+const recTiempo = document.getElementById('recTiempo');
+
+function mimeSoportado() {
+  if (typeof MediaRecorder === 'undefined') return null;
+  /* MP4/H.264 no tiene canal alfa: si se pide transparencia real, WebM VP9 */
+  const alfa = P.sinFondo && !MATTES[matte];
+  const lista = alfa
+    ? ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm']
+    : MIMES;
+  return lista.find(m => MediaRecorder.isTypeSupported(m)) || null;
+}
+
+function volcarCuadro() {
+  const ahora = performance.now();
+  if (ahora - ultimoVolcado < 1000 / 30) return;      // 30 fps
+  ultimoVolcado = ahora;
+  componer(grabCtx, grabCanvas.width, grabCanvas.height);
+  if (pistaVideo && pistaVideo.requestFrame) pistaVideo.requestFrame();
+
+  const seg = (ahora - inicioGrabacion) / 1000;
+  recTiempo.textContent = `${Math.floor(seg / 60)}:${String(Math.floor(seg % 60)).padStart(2, '0')}`;
+  if (seg >= DURACION_MAX) detenerGrabacion();
+}
+
+function iniciarGrabacion() {
+  const mime = mimeSoportado();
+  if (!mime) { alert('Este navegador no permite grabar video desde el canvas. Probá con Chrome.'); return; }
+
+  const { ancho, alto } = destino();
+  grabCanvas = document.createElement('canvas');
+  grabCanvas.width = ancho; grabCanvas.height = alto;
+  grabCtx = grabCanvas.getContext('2d', { alpha: true });
+
+  const stream = grabCanvas.captureStream(0);
+  pistaVideo = stream.getVideoTracks()[0];
+  trozos = [];
+  grabador = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 14e6 });
+  grabador.ondataavailable = e => { if (e.data.size) trozos.push(e.data); };
+  grabador.onstop = () => {
+    const blob = new Blob(trozos, { type: mime });
+    const ext = mime.includes('mp4') ? 'mp4' : 'webm';
+    const url = URL.createObjectURL(blob);
+    descargar(url, `visual-${ancho}x${alto}-${Date.now()}.${ext}`);
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    trozos = [];
+  };
+
+  grabando = true;
+  inicioGrabacion = performance.now();
+  ultimoVolcado = 0;
+  redimensionar();                    // sube la resolución interna al tamaño de salida
+  grabador.start();
+
+  recBadge.classList.add('is-visible');
+  recTiempo.textContent = '0:00';
+  btnRec.textContent = 'Detener y guardar';
+  btnRec.classList.add('is-grabando');
+  document.querySelectorAll('[data-formato]').forEach(b => b.disabled = true);
+}
+
+function detenerGrabacion() {
+  if (!grabando) return;
+  grabando = false;
+  if (grabador && grabador.state !== 'inactive') grabador.stop();
+  pistaVideo = null;
+  redimensionar();                    // vuelve a la resolución de pantalla
+
+  recBadge.classList.remove('is-visible');
+  btnRec.textContent = 'Grabar video';
+  btnRec.classList.remove('is-grabando');
+  document.querySelectorAll('[data-formato]').forEach(b => b.disabled = false);
+}
+
+/* ═══════════════════ Eventos ═══════════════════ */
+
+window.addEventListener('resize', () => { redimensionar(); actualizarNota(); });
+window.addEventListener('pointermove', e => {
+  const r = escenario.getBoundingClientRect();
+  mouse.x = e.clientX - r.left;
+  mouse.y = e.clientY - r.top;
+  mouse.activo = true;
+});
 document.addEventListener('mouseleave', () => { mouse.activo = false; });
 window.addEventListener('blur', () => { mouse.activo = false; });
 
@@ -662,14 +1050,69 @@ window.addEventListener('keydown', e => {
 const panel = document.getElementById('panel');
 const panelBody = document.getElementById('panelBody');
 const panelToggle = document.getElementById('panelToggle');
-const refs = {};   // clave → { input, salida }
+const refs = {};
+let btnRec = null;
+
+function bloque(titulo, html) {
+  const div = document.createElement('div');
+  div.className = 'grupo';
+  div.innerHTML = `<h2 class="grupo__titulo">${titulo}</h2>${html}`;
+  panelBody.appendChild(div);
+  return div;
+}
 
 function construirPanel() {
-  PARAMETROS.forEach(grupo => {
-    const cont = document.createElement('div');
-    cont.className = 'grupo';
-    cont.innerHTML = `<h2 class="grupo__titulo">${grupo.grupo}</h2>`;
+  /* --- formato y export --- */
+  const exp = bloque('Formato y export', `
+    <div class="fila-botones">
+      ${Object.keys(FORMATOS).map(n => `<button class="chip${n === formato ? ' is-activo' : ''}" type="button" data-formato="${n}">${n}</button>`).join('')}
+    </div>
+    <div class="fila-botones" id="filaMatte" hidden>
+      ${Object.entries(MATTES).map(([n, c]) => `<button class="chip${n === matte ? ' is-activo' : ''}" type="button" data-matte="${n}"><span class="chip__punto" style="background:${c || 'repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 50% / 6px 6px'}"></span>${n}</button>`).join('')}
+    </div>
+    <div class="botones">
+      <button class="btn btn--ancho btn--rec" type="button" id="btnRec">Grabar video</button>
+      <button class="btn btn--ancho" type="button" id="btnPng">Guardar PNG</button>
+    </div>
+    <p class="nota" id="notaExport"></p>`);
 
+  exp.querySelectorAll('[data-formato]').forEach(b => {
+    b.addEventListener('click', () => { ponerFormato(b.dataset.formato); actualizarNota(); });
+  });
+  exp.querySelectorAll('[data-matte]').forEach(b => {
+    b.addEventListener('click', () => {
+      matte = b.dataset.matte;
+      exp.querySelectorAll('[data-matte]').forEach(o => o.classList.toggle('is-activo', o === b));
+      actualizarNota();
+    });
+  });
+  btnRec = document.getElementById('btnRec');
+  btnRec.addEventListener('click', () => grabando ? detenerGrabacion() : iniciarGrabacion());
+  document.getElementById('btnPng').addEventListener('click', guardarPNG);
+
+  /* --- universos y paletas --- */
+  const uni = bloque('Universo', `
+    <div class="fila-botones">
+      ${Object.keys(UNIVERSOS).map(n => `<button class="chip" type="button" data-universo="${n}">${n}</button>`).join('')}
+    </div>`);
+  uni.querySelectorAll('[data-universo]').forEach(b => {
+    b.addEventListener('click', () => setValores(UNIVERSOS[b.dataset.universo]));
+  });
+
+  const pal = bloque('Paleta', `
+    <div class="fila-botones">
+      ${Object.entries(PALETAS).map(([n, p]) => `<button class="chip" type="button" data-paleta="${n}"><span class="chip__punto" style="background:${p.muestra}"></span>${n}</button>`).join('')}
+    </div>`);
+  pal.querySelectorAll('[data-paleta]').forEach(b => {
+    b.addEventListener('click', () => {
+      const { muestra, ...color } = PALETAS[b.dataset.paleta];
+      setValores(color);
+    });
+  });
+
+  /* --- sliders generados desde PARAMETROS --- */
+  PARAMETROS.forEach(grupo => {
+    const cont = bloque(grupo.grupo, '');
     grupo.controles.forEach(c => {
       const fila = document.createElement('div');
       fila.className = 'ctrl';
@@ -690,51 +1133,67 @@ function construirPanel() {
                           <input type="range" min="${c.min}" max="${c.max}" step="${c.paso}" value="${c.valor}">`;
         const input = fila.querySelector('input');
         const salida = fila.querySelector('.ctrl__valor');
-        salida.textContent = c.valor;
+        salida.textContent = c.clave === 'pasosColor' && c.valor === 0 ? 'continuo' : c.valor;
         input.addEventListener('input', () => aplicar(c.clave, parseFloat(input.value)));
         refs[c.clave] = { input, salida };
       }
-
       cont.appendChild(fila);
     });
-
-    panelBody.appendChild(cont);
   });
 
-  /* presets + botones */
-  const extra = document.createElement('div');
-  extra.className = 'grupo';
-  extra.innerHTML = `<h2 class="grupo__titulo">Presets</h2>
-                     <div class="presets">${Object.keys(PRESETS).map(n => `<button class="preset" type="button" data-preset="${n}">${n}</button>`).join('')}</div>
-                     <div class="botones">
-                       <button class="btn" type="button" id="btnAzar">Aleatorizar</button>
-                       <button class="btn" type="button" id="btnPausa">Pausar</button>
-                       <button class="btn" type="button" id="btnReset">Reiniciar</button>
-                       <button class="btn" type="button" id="btnSemillas">Resembrar</button>
-                       <button class="btn btn--ancho" type="button" id="btnPng">Guardar PNG</button>
-                     </div>`;
-  panelBody.appendChild(extra);
+  /* --- presets y acciones --- */
+  const acc = bloque('Presets', `
+    <div class="fila-botones">
+      ${Object.keys(PRESETS).map(n => `<button class="chip" type="button" data-preset="${n}">${n}</button>`).join('')}
+    </div>
+    <div class="botones">
+      <button class="btn" type="button" id="btnAzar">Aleatorizar</button>
+      <button class="btn" type="button" id="btnPausa">Pausar</button>
+      <button class="btn" type="button" id="btnReset">Reiniciar</button>
+      <button class="btn" type="button" id="btnSemillas">Resembrar</button>
+    </div>`);
 
-  extra.querySelectorAll('[data-preset]').forEach(b => {
+  acc.querySelectorAll('[data-preset]').forEach(b => {
     b.addEventListener('click', () => aplicarPreset(b.dataset.preset));
   });
   document.getElementById('btnAzar').addEventListener('click', aleatorizar);
   document.getElementById('btnReset').addEventListener('click', () => { setValores(DEFECTOS); resembrar(); });
   document.getElementById('btnSemillas').addEventListener('click', resembrar);
-  document.getElementById('btnPng').addEventListener('click', guardarPNG);
   const btnPausa = document.getElementById('btnPausa');
   btnPausa.addEventListener('click', () => {
     pausado = !pausado;
     btnPausa.textContent = pausado ? 'Seguir' : 'Pausar';
   });
+
+  actualizarNota();
+}
+
+function actualizarNota() {
+  const { ancho, alto } = destino();
+  const mime = mimeSoportado();
+  const ext = mime ? (mime.includes('mp4') ? 'MP4' : 'WEBM') : 'no disponible';
+  const alfa = P.sinFondo && !MATTES[matte];
+  const detalle = !P.sinFondo
+    ? ''
+    : alfa
+      ? ' · fondo transparente: PNG con alfa y WebM VP9 con canal alfa'
+      : ` · fondo plano ${matte.toLowerCase()} para cromar`;
+  document.getElementById('notaExport').textContent =
+    `Salida ${ancho}×${alto} · video ${ext} a 30 fps (corta solo a los ${DURACION_MAX} s)${detalle}.`;
 }
 
 function aplicar(clave, valor) {
   P[clave] = valor;
   const r = refs[clave];
-  if (r && r.salida) r.salida.textContent = valor;
+  if (r && r.salida) r.salida.textContent = (clave === 'pasosColor' && valor === 0) ? 'continuo' : valor;
   if (clave === 'cantidad') ajustarPoblacion();
-  if (clave === 'pesoFlores' || clave === 'pesoCorazones' || clave === 'pesoBlobs') rehacerTipos();
+  if (clave.startsWith('peso')) rehacerTipos();
+  if (clave === 'sinFondo') {
+    escenario.classList.toggle('is-transparente', !!valor);
+    const fila = document.getElementById('filaMatte');
+    if (fila) fila.hidden = !valor;
+    actualizarNota();
+  }
 }
 
 function setValores(valores) {
@@ -756,13 +1215,14 @@ function aplicarPreset(nombre) {
 function aleatorizar() {
   const nuevos = {};
   PARAMETROS.forEach(g => g.controles.forEach(c => {
-    if (c.tipo === 'switch') nuevos[c.clave] = Math.random() < 0.7;
-    else if (c.tipo === 'color') return;                       // el fondo se respeta
+    if (c.tipo === 'switch')            nuevos[c.clave] = Math.random() < 0.7;
+    else if (c.tipo === 'color')        return;                       // el fondo se respeta
     else if (c.clave === 'cantidad')    nuevos[c.clave] = Math.round(azar(30, 150));
     else if (c.clave === 'estela')      nuevos[c.clave] = alPaso(azar(0.72, 0.97), c.paso);
     else if (c.clave === 'opacidad')    nuevos[c.clave] = alPaso(azar(0.35, 0.95), c.paso);
     else if (c.clave === 'luminosidad') nuevos[c.clave] = alPaso(azar(45, 82), c.paso);
     else if (c.clave === 'velocidad')   nuevos[c.clave] = alPaso(azar(0.3, 2), c.paso);
+    else if (c.clave === 'pasosColor')  nuevos[c.clave] = Math.random() < 0.5 ? 0 : Math.round(azar(2, 6));
     else nuevos[c.clave] = alPaso(azar(c.min, c.max), c.paso);
   }));
   setValores(nuevos);
@@ -773,25 +1233,9 @@ function resembrar() {
   formas = [];
   ajustarPoblacion();
   crearAuras();
+  brillitos = [];
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   ctx.clearRect(0, 0, W, H);
-}
-
-/* Exporta lo que se ve: fondo desenfocado + escena, en una sola imagen */
-function guardarPNG() {
-  const salida = document.createElement('canvas');
-  salida.width = escena.width;
-  salida.height = escena.height;
-  const g = salida.getContext('2d');
-  g.filter = 'blur(60px) saturate(1.15)';
-  g.drawImage(fondo, -salida.width * 0.075, -salida.height * 0.075, salida.width * 1.15, salida.height * 1.15);
-  g.filter = 'none';
-  g.drawImage(escena, 0, 0);
-
-  const a = document.createElement('a');
-  a.download = `visual-${Date.now()}.png`;
-  a.href = salida.toDataURL('image/png');
-  a.click();
 }
 
 panelToggle.addEventListener('click', e => {
@@ -806,6 +1250,7 @@ document.getElementById('panelHead').addEventListener('click', () => panelToggle
 construirPanel();
 redimensionar();
 resembrar();
+actualizarNota();
 requestAnimationFrame(bucle);
 </script>
 </body>
