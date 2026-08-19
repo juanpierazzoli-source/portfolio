@@ -991,12 +991,16 @@ function mimeSoportado() {
 }
 
 /* Conversión a QuickTime con alfa. ProRes 4444 (yuva444p10le) es el formato
-   que Premiere, After Effects y Final Cut abren con transparencia nativa. */
+   que Premiere, After Effects y Final Cut abren con transparencia nativa.
+
+   OJO con "-c:v libvpx-vp9" ANTES del -i: el decoder VP9 que ffmpeg elige por
+   defecto descarta el plano alfa de WebM sin avisar y el .mov sale opaco
+   (medido: canal alfa plano en 3760 contra 434-3750 con libvpx-vp9). */
 let ultimoArchivo = 'visual.webm';
 
 function comandoMov() {
   const base = ultimoArchivo.replace(/\.[^.]+$/, '');
-  return `ffmpeg -i ${ultimoArchivo} -c:v prores_ks -profile:v 4444 -pix_fmt yuva444p10le ${base}.mov`;
+  return `ffmpeg -c:v libvpx-vp9 -i ${ultimoArchivo} -c:v prores_ks -profile:v 4444 -pix_fmt yuva444p10le ${base}.mov`;
 }
 
 function volcarCuadro() {
