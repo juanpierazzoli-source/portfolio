@@ -191,6 +191,21 @@
 
   .nota { margin: 7px 0 0; font-size: 10.5px; line-height: 1.45; opacity: 0.55; }
 
+  .comando {
+    margin-top: 8px;
+    padding: 9px 10px;
+    border-radius: 10px;
+    background: #2c2233;
+    color: #ffe0ec;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 9.5px;
+    line-height: 1.55;
+    word-break: break-all;
+    user-select: all;
+  }
+  .comando__pie { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .comando__pie .nota { margin: 0; }
+
   /* ===== Indicador de grabación ===== */
   .rec {
     position: fixed;
@@ -889,13 +904,14 @@ const auxCtx = auxiliar.getContext('2d');
 /* Rehace en un lienzo lo mismo que muestra el CSS: fondo desenfocado + escena.
    El desenfoque se aplica en un lienzo intermedio chico (el fondo ya es una
    textura de baja resolución), así el costo por cuadro sigue siendo bajo. */
-function componer(g, ancho, alto) {
-  const color = P.sinFondo ? MATTES[matte] : null;
+function componer(g, ancho, alto, colorForzado) {
+  const color = colorForzado !== undefined ? colorForzado : (P.sinFondo ? MATTES[matte] : null);
   g.setTransform(1, 0, 0, 1, 0, 0);
   g.clearRect(0, 0, ancho, alto);
 
   if (P.sinFondo) {
     /* sin aguada de color: o queda transparente, o se rellena con el matte */
+    g.imageSmoothingEnabled = true;
     if (color) { g.fillStyle = color; g.fillRect(0, 0, ancho, alto); }
     g.imageSmoothingEnabled = true;
     g.imageSmoothingQuality = 'high';
@@ -921,6 +937,8 @@ function componer(g, ancho, alto) {
 }
 
 function descargar(url, nombre) {
+  ultimoArchivo = nombre;
+  actualizarComando();
   const a = document.createElement('a');
   a.download = nombre;
   a.href = url;
@@ -955,14 +973,30 @@ let inicioGrabacion = 0, ultimoVolcado = 0;
 const recBadge = document.getElementById('rec');
 const recTiempo = document.getElementById('recTiempo');
 
+/* El navegador NO puede escribir QuickTime: MediaRecorder.isTypeSupported
+   ('video/quicktime') y ProRes ('ap4h') dan false. Lo único con canal alfa que
+   sabe grabar es WebM VP9, así que ese es el master para "sin fondo", y el
+   .mov ProRes 4444 sale de una conversión local (ver comandoMov()). Para todo
+   lo demás, MP4/H.264. */
+function conAlfa() {
+  return P.sinFondo && !MATTES[matte];
+}
+
 function mimeSoportado() {
   if (typeof MediaRecorder === 'undefined') return null;
-  /* MP4/H.264 no tiene canal alfa: si se pide transparencia real, WebM VP9 */
-  const alfa = P.sinFondo && !MATTES[matte];
-  const lista = alfa
+  const lista = conAlfa()
     ? ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm']
     : MIMES;
   return lista.find(m => MediaRecorder.isTypeSupported(m)) || null;
+}
+
+/* Conversión a QuickTime con alfa. ProRes 4444 (yuva444p10le) es el formato
+   que Premiere, After Effects y Final Cut abren con transparencia nativa. */
+let ultimoArchivo = 'visual.webm';
+
+function comandoMov() {
+  const base = ultimoArchivo.replace(/\.[^.]+$/, '');
+  return `ffmpeg -i ${ultimoArchivo} -c:v prores_ks -profile:v 4444 -pix_fmt yuva444p10le ${base}.mov`;
 }
 
 function volcarCuadro() {
@@ -1074,7 +1108,14 @@ function construirPanel() {
       <button class="btn btn--ancho btn--rec" type="button" id="btnRec">Grabar video</button>
       <button class="btn btn--ancho" type="button" id="btnPng">Guardar PNG</button>
     </div>
-    <p class="nota" id="notaExport"></p>`);
+    <p class="nota" id="notaExport"></p>
+    <div id="bloqueMov" hidden>
+      <div class="comando" id="comandoMov"></div>
+      <div class="comando__pie">
+        <button class="chip" type="button" id="btnCopiar">Copiar</button>
+        <p class="nota">Convierte el WebM con alfa a QuickTime ProRes 4444.</p>
+      </div>
+    </div>`);
 
   exp.querySelectorAll('[data-formato]').forEach(b => {
     b.addEventListener('click', () => { ponerFormato(b.dataset.formato); actualizarNota(); });
@@ -1086,6 +1127,7 @@ function construirPanel() {
       actualizarNota();
     });
   });
+  document.getElementById('btnCopiar').addEventListener('click', copiarComando);
   btnRec = document.getElementById('btnRec');
   btnRec.addEventListener('click', () => grabando ? detenerGrabacion() : iniciarGrabacion());
   document.getElementById('btnPng').addEventListener('click', guardarPNG);
@@ -1172,14 +1214,44 @@ function actualizarNota() {
   const { ancho, alto } = destino();
   const mime = mimeSoportado();
   const ext = mime ? (mime.includes('mp4') ? 'MP4' : 'WEBM') : 'no disponible';
-  const alfa = P.sinFondo && !MATTES[matte];
   const detalle = !P.sinFondo
     ? ''
-    : alfa
-      ? ' · fondo transparente: PNG con alfa y WebM VP9 con canal alfa'
+    : conAlfa()
+      ? ' · sin fondo: PNG y WebM VP9 con canal alfa (el navegador no puede escribir QuickTime; se convierte abajo)'
       : ` · fondo plano ${matte.toLowerCase()} para cromar`;
   document.getElementById('notaExport').textContent =
     `Salida ${ancho}×${alto} · video ${ext} a 30 fps (corta solo a los ${DURACION_MAX} s)${detalle}.`;
+  actualizarComando();
+}
+
+function actualizarComando() {
+  const bloque = document.getElementById('bloqueMov');
+  if (!bloque) return;
+  bloque.hidden = !conAlfa();
+  document.getElementById('comandoMov').textContent = comandoMov();
+}
+
+function copiarComando() {
+  const texto = comandoMov();
+  const listo = () => {
+    const b = document.getElementById('btnCopiar');
+    b.textContent = 'Copiado';
+    setTimeout(() => { b.textContent = 'Copiar'; }, 1400);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(texto).then(listo, copiarAlaAntigua);
+  } else {
+    copiarAlaAntigua();
+  }
+  /* file:// suele bloquear el portapapeles moderno: red de seguridad */
+  function copiarAlaAntigua() {
+    const t = document.createElement('textarea');
+    t.value = texto;
+    document.body.appendChild(t);
+    t.select();
+    try { document.execCommand('copy'); listo(); } catch (e) {}
+    t.remove();
+  }
 }
 
 function aplicar(clave, valor) {
