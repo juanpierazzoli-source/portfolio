@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mariposas — Juan Pierazzoli</title>
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+<meta name="description" content="Generador de enjambres de mariposas que siguen al mouse, con profundidad de campo y paleta editable. Export a PNG y video con canal alfa." />
+<style>
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: #14101a;
+    overflow: hidden;
+    font-family: ui-rounded, "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    color: #4a2d3a;
+  }
+
+  /* ===== Escenario (recorta la escena al formato elegido) ===== */
+  .escenario {
+    position: fixed;
+    overflow: hidden;
+    background: #ffffff;
+    transition: box-shadow 0.25s ease;
+  }
+  .escenario.is-encuadrado { box-shadow: 0 20px 70px rgba(0, 0, 0, 0.55); }
+
+  /* damero: se ve solo en pantalla, marca que el fondo es transparente */
+  .escenario.is-transparente {
+    background-color: #fbfbfd;
+    background-image:
+      linear-gradient(45deg, #e3e3ec 25%, transparent 25%, transparent 75%, #e3e3ec 75%),
+      linear-gradient(45deg, #e3e3ec 25%, transparent 25%, transparent 75%, #e3e3ec 75%);
+    background-size: 24px 24px;
+    background-position: 0 0, 12px 12px;
+  }
+
+  #escena {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* ===== Panel de parámetros ===== */
+  .panel {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 4;
+    width: 300px;
+    max-height: calc(100vh - 32px);
+    display: flex;
+    flex-direction: column;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.86);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    overflow: hidden;
+  }
+
+  .panel__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 12px 14px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .panel__title {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .panel__toggle {
+    border: 0;
+    background: rgba(255, 255, 255, 0.7);
+    color: inherit;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .panel__body { overflow-y: auto; padding: 0 14px 14px; }
+  .panel.is-cerrado .panel__body { display: none; }
+
+  .grupo { margin-top: 12px; }
+  .grupo__titulo {
+    margin: 0 0 7px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    opacity: 0.55;
+  }
+
+  .ctrl { margin-bottom: 9px; }
+  .ctrl__fila {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 12px;
+    margin-bottom: 3px;
+  }
+  .ctrl__valor { font-variant-numeric: tabular-nums; font-size: 11px; opacity: 0.6; }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 5px;
+    border-radius: 5px;
+    background: rgba(120, 90, 110, 0.28);
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: #e8926a;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 13px; height: 13px; border-radius: 50%;
+    background: #e8926a; border: 2px solid #fff; cursor: pointer;
+  }
+
+  input[type="color"] {
+    width: 100%; height: 26px; padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 8px; background: none; cursor: pointer;
+  }
+
+  /* ===== Paleta: 8 muestras con on/off y color editable ===== */
+  .paleta {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
+  }
+  .muestra { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .muestra input[type="color"] {
+    height: 30px;
+    border-radius: 7px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    transition: opacity 0.15s ease, filter 0.15s ease;
+  }
+  .muestra.is-apagada input[type="color"] { opacity: 0.2; filter: grayscale(1); }
+  .muestra input[type="checkbox"] { margin: 0; width: 12px; height: 12px; accent-color: #e8926a; cursor: pointer; }
+
+  .check { display: flex; align-items: center; gap: 7px; font-size: 12px; cursor: pointer; }
+  .check input { accent-color: #e8926a; width: 15px; height: 15px; }
+
+  .fila-botones { display: flex; flex-wrap: wrap; gap: 6px; }
+  .fila-botones[hidden] { display: none; }   /* [hidden] pierde contra la clase */
+
+  .chip {
+    border: 0;
+    border-radius: 999px;
+    padding: 6px 11px;
+    font: inherit;
+    font-size: 11px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #5a3a2f;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .chip:hover { background: #ffe8dc; }
+  .chip.is-activo { background: #2c2233; color: #fff; }
+  .chip__punto {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 5px;
+    vertical-align: -1px;
+  }
+
+  .botones { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 8px; }
+  .btn {
+    border: 0; border-radius: 12px; padding: 9px 8px;
+    font: inherit; font-size: 12px; font-weight: 600;
+    background: #ffdccb; color: #6b3a24; cursor: pointer;
+    transition: transform 0.12s ease, background 0.2s ease;
+  }
+  .btn:hover { background: #ffcdb3; transform: translateY(-1px); }
+  .btn:disabled { opacity: 0.45; cursor: default; transform: none; }
+  .btn--ancho { grid-column: 1 / -1; }
+  .btn--rec { background: #ffb3b3; }
+  .btn--rec.is-grabando { background: #e0233a; color: #fff; }
+
+  .nota { margin: 7px 0 0; font-size: 10.5px; line-height: 1.45; opacity: 0.55; }
+
+  .comando {
+    margin-top: 8px;
+    padding: 9px 10px;
+    border-radius: 10px;
+    background: #2c2233;
+    color: #ffe6d8;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 9.5px;
+    line-height: 1.55;
+    word-break: break-all;
+    user-select: all;
+  }
+  .comando__pie { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .comando__pie .nota { margin: 0; }
+
+  /* ===== Indicador de grabación ===== */
+  .rec {
+    position: fixed;
+    left: 16px; top: 16px;
+    z-index: 5;
+    display: none;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 13px;
+    border-radius: 999px;
+    background: rgba(224, 35, 58, 0.92);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+  }
+  .rec.is-visible { display: flex; }
+  .rec__punto {
+    width: 9px; height: 9px; border-radius: 50%; background: #fff;
+    animation: latir 1s ease-in-out infinite;
+  }
+  @keyframes latir { 50% { opacity: 0.25; } }
+
+  .ayuda {
+    position: fixed;
+    left: 16px; bottom: 14px;
+    z-index: 4;
+    margin: 0;
+    font-size: 11px;
+    line-height: 1.5;
+    color: #fff;
+    opacity: 0.45;
+    pointer-events: none;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  }
+
+  @media (max-width: 680px) {
+    .panel { width: auto; left: 12px; right: 12px; top: 12px; }
+    .panel__body { max-height: 56vh; }
+    .ayuda { display: none; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="escenario" id="escenario">
+    <canvas id="escena" aria-label="Enjambre generativo de mariposas que sigue al mouse"></canvas>
+  </div>
+
+  <div class="rec" id="rec"><span class="rec__punto"></span><span id="recTiempo">0:00</span></div>
+
+  <section class="panel" id="panel">
+    <header class="panel__head" id="panelHead">
+      <h1 class="panel__title">Mariposas</h1>
+      <button class="panel__toggle" id="panelToggle" type="button" aria-label="Contraer panel">–</button>
+    </header>
+    <div class="panel__body" id="panelBody"></div>
+  </section>
+
+  <p class="ayuda">
+    Mové el mouse y el enjambre te sigue · sin mouse vuela solo ·
+    <b>espacio</b> pausa · <b>R</b> aleatoriza · <b>H</b> oculta el panel
+  </p>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   MARIPOSAS
+   ---------------------------------------------------------------------------
+   Enjambre de mariposas colgado de un recorrido: el mouse escribe una estela
+   de posiciones y cada mariposa persigue ese recorrido con su propio retardo
+   y su propia dispersión lateral. Eso es lo que arma el racimo en curva.
+
+   Lo que hace que la imagen lea como foto y no como clipart es la PROFUNDIDAD
+   DE CAMPO: cada mariposa tiene una z, y de esa z salen su escala, su alfa y
+   su desenfoque. Las que están fuera del plano de foco se funden en manchas
+   de color.
+
+   El desenfoque por cuadro sería carísimo, así que cada mariposa se dibuja UNA
+   vez en su propio sprite (con blur y glow ya cocidos) y después solo se hace
+   drawImage. El aleteo es un escalado horizontal del sprite, que a estos
+   tamaños lee igual que redibujar las alas.
+
+   TODO lo regulable vive en PARAMETROS: agregar una entrada ahí genera sola su
+   control en el panel y se lee como P.<clave>.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const PARAMETROS = [
+  {
+    grupo: 'Enjambre',
+    controles: [
+      { clave: 'cantidad',  label: 'Cantidad de mariposas', min: 5, max: 400, paso: 1,    valor: 160 },
+      { clave: 'tamano',    label: 'Tamaño base',           min: 4, max: 160, paso: 1,    valor: 42 },
+      { clave: 'variacion', label: 'Variación de tamaño',   min: 0, max: 1,   paso: 0.01, valor: 0.6 }
+    ]
+  },
+  {
+    grupo: 'Mouse',
+    controles: [
+      { clave: 'iman',       label: 'Imán del mouse',     min: 0, max: 3,  paso: 0.05, valor: 1.1 },
+      { clave: 'retardo',    label: 'Retardo de la estela', min: 0, max: 5, paso: 0.05, valor: 3.6 },
+      { clave: 'dispersion', label: 'Dispersión',         min: 0, max: 400, paso: 5,   valor: 120 },
+      { clave: 'velocidad',  label: 'Velocidad',          min: 0, max: 3,  paso: 0.05, valor: 1 }
+    ]
+  },
+  {
+    grupo: 'Alas',
+    controles: [
+      { clave: 'aleteo',   label: 'Aleteo (frecuencia)', min: 0, max: 12, paso: 0.1,  valor: 3.4 },
+      { clave: 'apertura', label: 'Apertura de alas',    min: 0, max: 1,  paso: 0.01, valor: 0.62 }
+    ]
+  },
+  {
+    grupo: 'Profundidad y desenfoque',
+    controles: [
+      { clave: 'profundidad', label: 'Profundidad',      min: 0, max: 1,  paso: 0.01, valor: 0.6 },
+      { clave: 'desenfoque',  label: 'Desenfoque máximo', min: 0, max: 40, paso: 0.5, valor: 14 },
+      { clave: 'foco',        label: 'Plano de foco',    min: 0, max: 1,  paso: 0.01, valor: 0.72 }
+    ]
+  },
+  {
+    grupo: 'Color',
+    controles: [
+      { clave: 'mezcla',      label: 'Mezcla entre colores', min: 0, max: 1,   paso: 0.01, valor: 0.75 },
+      { clave: 'saturacion',  label: 'Saturación',           min: 0, max: 200, paso: 1,    valor: 100 },
+      { clave: 'luminosidad', label: 'Luminosidad',          min: -40, max: 40, paso: 1,   valor: 0 },
+      { clave: 'opacidad',    label: 'Opacidad',             min: 0.05, max: 1, paso: 0.01, valor: 0.85 },
+      { clave: 'fondo',       label: 'Color de fondo',       tipo: 'color', valor: '#ffffff' },
+      { clave: 'sinFondo',    label: 'Sin fondo (exporta con transparencia)', tipo: 'switch', valor: false }
+    ]
+  },
+  {
+    grupo: 'Render',
+    controles: [
+      { clave: 'estela', label: 'Estela',        min: 0, max: 0.97, paso: 0.01, valor: 0 },
+      { clave: 'brillo', label: 'Brillo (glow)', min: 0, max: 40,   paso: 1,    valor: 0 }
+    ]
+  }
+];
+
+/* Paleta de partida: las ocho muestras de referencia. Cada una es editable y
+   se puede apagar; 'mezcla' interpola entre las que estén encendidas. */
+const PALETA_INICIAL = [
+  '#a9c79b', '#f3f1ea', '#e8926a', '#e14b3c',
+  '#8fae55', '#8e6ba8', '#b49ad4', '#6b4c8e'
+];
+
+/* Presets: pisan solo las claves que nombran. 'paleta' reemplaza las muestras
+   y enciende exactamente esas. */
+const PRESETS = {
+  'Paleta': {
+    paleta: PALETA_INICIAL,
+    mezcla: 0.75, cantidad: 160, tamano: 42, desenfoque: 14, foco: 0.72, estela: 0
+  },
+  'Fuego': {
+    paleta: ['#ff9d2e', '#ff7a1a', '#f5451f', '#e02b12', '#ffd400', '#ffe95c', '#ff6b3d', '#c81f0a'],
+    mezcla: 0.85, cantidad: 240, tamano: 46, variacion: 0.7,
+    desenfoque: 18, foco: 0.78, profundidad: 0.7, opacidad: 0.88, estela: 0, brillo: 0
+  },
+  'Fantasma': {
+    cantidad: 90, tamano: 120, variacion: 0.8,
+    desenfoque: 34, foco: 0.95, profundidad: 0.9,
+    opacidad: 0.28, estela: 0.9, brillo: 18, velocidad: 0.5, aleteo: 1.4
+  },
+  'Enjambre': {
+    cantidad: 380, tamano: 16, variacion: 0.5,
+    desenfoque: 8, foco: 0.6, dispersion: 200, retardo: 3.2, aleteo: 6, velocidad: 1.6
+  },
+  'Cardumen': {
+    cantidad: 40, tamano: 110, variacion: 0.3,
+    desenfoque: 10, foco: 0.5, dispersion: 60, retardo: 1.2, iman: 1.8, aleteo: 2.2
+  },
+  'Neón': {
+    paleta: ['#00e5ff', '#7c4dff', '#ff2d95', '#00ffa3', '#ffe600', '#ff6d00', '#b388ff', '#00b8d4'],
+    mezcla: 0.4, fondo: '#0b0a14', cantidad: 200, tamano: 34,
+    brillo: 26, estela: 0.88, opacidad: 0.8, desenfoque: 16
+  }
+};
+
+/* Formatos de encuadre y export. 'Pantalla' usa toda la ventana. */
+const FORMATOS = {
+  'Pantalla': { ratio: null,   ancho: 0,    alto: 0 },
+  '16:9':     { ratio: 16 / 9, ancho: 1920, alto: 1080 },
+  '1:1':      { ratio: 1,      ancho: 1080, alto: 1080 },
+  '9:16':     { ratio: 9 / 16, ancho: 1080, alto: 1920 }
+};
+
+/* Con 'sin fondo' el archivo sale sin el color de fondo. Qué queda en su lugar
+   lo decide el matte: transparencia real (WebM VP9 / PNG) o un color plano
+   para cromar en el editor. */
+const MATTES = {
+  'Transparente': null,
+  'Verde':        '#00b140',
+  'Magenta':      '#ff00ff',
+  'Negro':        '#000000'
+};
+
+/* ═══════════════════ Estado ═══════════════════ */
+
+const P = {};
+const DEFECTOS = {};
+PARAMETROS.forEach(g => g.controles.forEach(c => { P[c.clave] = c.valor; DEFECTOS[c.clave] = c.valor; }));
+
+const paleta = PALETA_INICIAL.map(color => ({ color, activo: true }));
+
+const escenario = document.getElementById('escenario');
+const escena = document.getElementById('escena');
+const ctx = escena.getContext('2d');
+
+let W = 0, H = 0, DPR = 1;
+let formato = 'Pantalla';
+let matte = 'Transparente';
+let mariposas = [];
+let tiempo = 0;
+let pausado = false;
+let mouse = { x: -9999, y: -9999, activo: false, ultimo: -99 };
+
+/* ═══════════════════ Utilidades ═══════════════════ */
+
+const azar  = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const mezclar = (a, b, t) => a + (b - a) * t;
+
+/* redondea al paso del slider y limpia la basura de coma flotante */
+function alPaso(v, paso) {
+  const dec = (String(paso).split('.')[1] || '').length;
+  return parseFloat((Math.round(v / paso) * paso).toFixed(dec));
+}
+
+function hexARgb(hex) {
+  const h = hex.replace('#', '');
+  const n = h.length === 3
+    ? h.split('').map(c => c + c).join('')
+    : h;
+  return {
+    r: parseInt(n.slice(0, 2), 16),
+    g: parseInt(n.slice(2, 4), 16),
+    b: parseInt(n.slice(4, 6), 16)
+  };
+}
+
+/* RGB → HSL, para poder correr saturación y luminosidad sin perder el matiz
+   original de la muestra. */
+function rgbAHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  let h = 0, s = 0;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    if (max === r)      h = ((g - b) / d + (g < b ? 6 : 0));
+    else if (max === g) h = ((b - r) / d + 2);
+    else                h = ((r - g) / d + 4);
+    h *= 60;
+  }
+  return { h, s: s * 100, l: l * 100 };
+}
+
+/* ═══════════════════ Color desde la paleta ═══════════════════ */
+
+function activas() {
+  const on = paleta.filter(m => m.activo);
+  return on.length ? on : [paleta[0]];
+}
+
+/* Cada mariposa guarda una posición continua en la paleta (0..1). Con
+   mezcla = 0 se queda con la muestra pura; con mezcla = 1 recorre el degradé
+   completo entre muestra y muestra. */
+function colorDe(m) {
+  const lista = activas();
+  const n = lista.length;
+  const pos = m.paletaPos * n;
+  const i = Math.min(n - 1, Math.floor(pos));
+  const frac = (pos - i) * P.mezcla;
+
+  const a = hexARgb(lista[i].color);
+  const b = hexARgb(lista[(i + 1) % n].color);
+  const r = mezclar(a.r, b.r, frac);
+  const g = mezclar(a.g, b.g, frac);
+  const bl = mezclar(a.b, b.b, frac);
+
+  const hsl = rgbAHsl(r, g, bl);
+  const s = clamp(hsl.s * (P.saturacion / 100), 0, 100);
+  const l = clamp(hsl.l + P.luminosidad, 0, 100);
+  return `hsl(${hsl.h.toFixed(1)} ${s.toFixed(1)}% ${l.toFixed(1)}%)`;
+}
+
+/* ═══════════════════ Recorrido (mouse o vuelo solo) ═══════════════════ */
+
+/* Historial de posiciones a paso fijo: así "hace N segundos" es un índice y no
+   una búsqueda. Guarda hasta RETARDO_MAX segundos. */
+const PASO_ESTELA = 1 / 60;
+const RETARDO_MAX = 5;
+const LARGO_ESTELA = Math.ceil(RETARDO_MAX / PASO_ESTELA) + 2;
+const estela = [];
+let acumEstela = 0;
+
+/* Sin mouse el recorrido lo escribe una curva lenta: el enjambre sigue vivo
+   mientras se graba sin tener que mover la mano. */
+function cursorAuto(t) {
+  return {
+    x: W / 2 + Math.sin(t * 0.42) * W * 0.42 + Math.sin(t * 0.19 + 1.3) * W * 0.12,
+    y: H / 2 + Math.sin(t * 0.29 + 2.1) * H * 0.32 + Math.sin(t * 0.53) * H * 0.09
+  };
+}
+
+function empujarEstela(dt) {
+  const usaMouse = mouse.activo && (tiempo - mouse.ultimo) < 1.5;
+  const p = usaMouse ? { x: mouse.x, y: mouse.y } : cursorAuto(tiempo);
+
+  acumEstela += dt;
+  let pasos = 0;
+  while (acumEstela >= PASO_ESTELA && pasos < 8) {
+    acumEstela -= PASO_ESTELA;
+    pasos++;
+    estela.unshift(p);
+    if (estela.length > LARGO_ESTELA) estela.length = LARGO_ESTELA;
+  }
+  if (!estela.length) estela.unshift(p);
+}
+
+/* Punto del recorrido hace `seg` segundos, interpolado entre muestras. */
+function puntoEstela(seg) {
+  const idx = clamp(seg / PASO_ESTELA, 0, estela.length - 1);
+  const i = Math.floor(idx);
+  const a = estela[i];
+  const b = estela[Math.min(estela.length - 1, i + 1)];
+  const f = idx - i;
+  return { x: mezclar(a.x, b.x, f), y: mezclar(a.y, b.y, f) };
+}
+
+/* ═══════════════════ Silueta de la mariposa ═══════════════════ */
+
+/* Un solo path con las cuatro alas y el cuerpo: se rellena de una sola pasada
+   con regla nonzero, así los solapes no duplican el alfa y la silueta queda
+   pareja. R es la media envergadura en píxeles. */
+function trazarMariposa(g, R, forma) {
+  const { anchoSup, altoSup, anchoInf, altoInf, cintura } = forma;
+
+  g.beginPath();
+  for (const lado of [1, -1]) {
+    const x = v => lado * v * R;
+    const y = v => v * R;
+
+    /* Ala superior: grande, sale hacia afuera y arriba, con la punta alta.
+       El borde de abajo vuelve casi hasta el cuerpo para dejar la muesca. */
+    g.moveTo(x(0.02), y(-0.12));
+    g.bezierCurveTo(
+      x(0.30 * anchoSup), y(-1.02 * altoSup),
+      x(0.86 * anchoSup), y(-1.10 * altoSup),
+      x(1.06 * anchoSup), y(-0.58 * altoSup)
+    );
+    g.bezierCurveTo(
+      x(1.18 * anchoSup), y(-0.30 * altoSup),
+      x(0.72 * anchoSup), y(-0.10 * altoSup),
+      x(0.06), y(-0.02)
+    );
+    g.closePath();
+
+    /* Ala inferior: bastante más chica y redonda, colgada más abajo del
+       cuerpo. Esa diferencia de tamaño es lo que la separa de una flor. */
+    g.moveTo(x(0.05), y(0.08));
+    g.bezierCurveTo(
+      x(0.48 * anchoInf), y(0.16 * altoInf),
+      x(0.72 * anchoInf), y(0.42 * altoInf),
+      x(0.60 * anchoInf), y(0.76 * altoInf)
+    );
+    g.bezierCurveTo(
+      x(0.50 * anchoInf), y(1.00 * altoInf),
+      x(0.18 * anchoInf), y(0.88 * altoInf),
+      x(0.04), y(0.42 * altoInf)
+    );
+    g.closePath();
+  }
+
+  /* cuerpo: largo, que se lea el tórax y el abdomen entre las cuatro alas */
+  g.moveTo(0, -0.46 * R);
+  g.ellipse(0, 0.06 * R, cintura * R, 0.52 * R, 0, 0, Math.PI * 2);
+  g.fill('nonzero');
+
+  /* antenas: finitas, son las que terminan de leer "mariposa" */
+  g.lineWidth = Math.max(0.5, R * 0.04);
+  g.lineCap = 'round';
+  g.beginPath();
+  g.moveTo(-0.05 * R, -0.42 * R);
+  g.quadraticCurveTo(-0.32 * R, -0.78 * R, -0.46 * R, -1.00 * R);
+  g.moveTo(0.05 * R, -0.42 * R);
+  g.quadraticCurveTo(0.32 * R, -0.78 * R, 0.46 * R, -1.00 * R);
+  g.stroke();
+}
+
+/* ═══════════════════ Sprites ═══════════════════ */
+
+/* Cada mariposa cocina su propio sprite: color, desenfoque y glow quedan
+   pegados al bitmap y el bucle solo hace drawImage. Se rehace cuando cambia
+   algo que afecte al dibujo (tamaño, color, foco, glow) o la resolución. */
+function escalaZ(z) {
+  /* z = 0 lejos, z = 1 cerca */
+  return mezclar(1 - P.profundidad * 0.75, 1 + P.profundidad * 0.9, z);
+}
+
+function desenfoqueDe(m) {
+  const dz = Math.abs(m.z - P.foco);
+  return P.desenfoque * dz * (0.4 + 0.6 * escalaZ(m.z));
+}
+
+function rehacerSprite(m) {
+  const R = P.tamano * m.escala * escalaZ(m.z);
+  const blur = desenfoqueDe(m);
+  const glow = P.brillo * (0.5 + 0.5 * escalaZ(m.z));
+  const margen = blur * 3 + glow * 1.6 + 3;
+  const ladoCss = R * 2.3 + margen * 2;
+  const lado = Math.max(4, Math.ceil(ladoCss * DPR));
+
+  if (!m.sprite) m.sprite = document.createElement('canvas');
+  m.sprite.width = lado;
+  m.sprite.height = lado;
+  m.ladoCss = lado / DPR;
+
+  const g = m.sprite.getContext('2d');
+  g.setTransform(DPR, 0, 0, DPR, 0, 0);
+  g.translate(m.ladoCss / 2, m.ladoCss / 2);
+
+  const color = colorDe(m);
+  g.fillStyle = color;
+  g.strokeStyle = color;
+  if (blur > 0.15) g.filter = `blur(${blur.toFixed(2)}px)`;
+  if (glow > 0.5) { g.shadowColor = color; g.shadowBlur = glow; }
+
+  trazarMariposa(g, R, m.forma);
+
+  m.spriteSucio = false;
+}
+
+function ensuciarSprites() {
+  mariposas.forEach(m => { m.spriteSucio = true; });
+}
+
+/* Rehacer 400 sprites en un cuadro se nota: se reparte en tandas. Al grabar se
+   fuerza todo de una para que el primer cuadro salga completo. */
+function procesarSprites(limite) {
+  let hechos = 0;
+  for (const m of mariposas) {
+    if (!m.spriteSucio) continue;
+    rehacerSprite(m);
+    if (++hechos >= limite) break;
+  }
+}
+
+/* ═══════════════════ Población ═══════════════════ */
+
+function nuevaMariposa() {
+  const z = Math.random();
+  return {
+    z,
+    escala: azar(1 - P.variacion, 1 + P.variacion * 1.4) * 0.5,
+    paletaPos: Math.random(),
+    forma: {
+      anchoSup: azar(0.88, 1.12),
+      altoSup:  azar(0.88, 1.12),
+      anchoInf: azar(0.85, 1.15),
+      altoInf:  azar(0.85, 1.15),
+      cintura:  azar(0.05, 0.085)
+    },
+    /* cada una cuelga del recorrido con su propio retardo y su propio desvío */
+    retardoRel: Math.random(),
+    desvio: azar(-1, 1),
+    desvioY: azar(-1, 1),
+    vagarFase: azar(0, Math.PI * 2),
+    vagarRitmo: azar(0.3, 1.1),
+    aleteoFase: azar(0, Math.PI * 2),
+    aleteoRitmo: azar(0.75, 1.35),
+    inclinacion: azar(-0.5, 0.5),
+    x: azar(0, W), y: azar(0, H), vx: 0, vy: 0,
+    sprite: null, ladoCss: 0, spriteSucio: true
+  };
+}
+
+function ajustarPoblacion() {
+  const n = Math.round(P.cantidad);
+  while (mariposas.length < n) mariposas.push(nuevaMariposa());
+  if (mariposas.length > n) mariposas.length = n;
+  /* de lejos a cerca: las del fondo se dibujan primero */
+  mariposas.sort((a, b) => a.z - b.z);
+}
+
+/* ═══════════════════ Simulación ═══════════════════ */
+
+function actualizar(dt) {
+  empujarEstela(dt);
+
+  const disp = P.dispersion;
+  const vel = P.velocidad;
+
+  for (const m of mariposas) {
+    /* profundidad: lo que está lejos se mueve menos, como en un paralaje */
+    const k = escalaZ(m.z);
+
+    const objetivo = puntoEstela(m.retardoRel * P.retardo);
+    const vagar = tiempo * m.vagarRitmo + m.vagarFase;
+
+    const tx = objetivo.x + m.desvio  * disp + Math.sin(vagar)       * disp * 0.35;
+    const ty = objetivo.y + m.desvioY * disp * 0.7 + Math.cos(vagar * 1.3) * disp * 0.3;
+
+    /* resorte hacia el objetivo + rozamiento: el retraso da el racimo en curva */
+    const fuerza = P.iman * 6 * k;
+    m.vx += (tx - m.x) * fuerza * dt;
+    m.vy += (ty - m.y) * fuerza * dt;
+
+    const roce = Math.exp(-3.2 * dt);
+    m.vx *= roce;
+    m.vy *= roce;
+
+    m.x += m.vx * dt * vel;
+    m.y += m.vy * dt * vel;
+
+    /* orientación: se inclina hacia donde va, sin llegar a acostarse */
+    const objAng = Math.atan2(m.vy, m.vx) + Math.PI / 2;
+    const dif = Math.atan2(Math.sin(objAng - (m.ang || 0)), Math.cos(objAng - (m.ang || 0)));
+    m.ang = (m.ang || 0) + dif * Math.min(1, dt * 2.5);
+    m.ladeo = m.inclinacion * 0.5 + Math.sin(vagar * 0.7) * 0.12;
+
+    m.aleteoFase += dt * P.aleteo * m.aleteoRitmo * Math.PI * 2;
+  }
+}
+
+/* ═══════════════════ Dibujo ═══════════════════ */
+
+function limpiar() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  if (P.estela <= 0) {
+    ctx.clearRect(0, 0, W, H);
+    if (!P.sinFondo) { ctx.fillStyle = P.fondo; ctx.fillRect(0, 0, W, H); }
+    return;
+  }
+  const alfa = 1 - P.estela;
+  if (P.sinFondo) {
+    /* sin fondo no se puede "pintar encima": se le come alfa al lienzo */
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.fillStyle = `rgba(0,0,0,${alfa})`;
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'source-over';
+  } else {
+    const { r, g, b } = hexARgb(P.fondo);
+    ctx.fillStyle = `rgba(${r},${g},${b},${alfa})`;
+    ctx.fillRect(0, 0, W, H);
+  }
+}
+
+function dibujar() {
+  limpiar();
+
+  const opacBase = P.opacidad;
+  for (const m of mariposas) {
+    if (!m.sprite || m.spriteSucio) continue;
+
+    const lado = m.ladoCss;
+    if (m.x < -lado || m.x > W + lado || m.y < -lado || m.y > H + lado) continue;
+
+    /* aleteo: el sprite se angosta como si las alas se cerraran de canto */
+    const ciclo = (1 + Math.cos(m.aleteoFase)) / 2;
+    const abre = 1 - P.apertura * (1 - ciclo);
+
+    /* las lejanas pierden algo de alfa: es lo que separa los planos */
+    const alfaZ = mezclar(0.55, 1, m.z);
+
+    ctx.globalAlpha = clamp(opacBase * alfaZ, 0, 1);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.translate(m.x, m.y);
+    ctx.rotate(m.ang * 0.25 + m.ladeo);
+    ctx.scale(abre, 1);
+    ctx.drawImage(m.sprite, -lado / 2, -lado / 2, lado, lado);
+  }
+
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.globalAlpha = 1;
+}
+
+/* ═══════════════════ Bucle ═══════════════════ */
+
+let ultimoCuadro = 0;
+
+function bucle(ahora) {
+  requestAnimationFrame(bucle);
+  if (!ultimoCuadro) ultimoCuadro = ahora;
+  const dt = Math.min(0.05, (ahora - ultimoCuadro) / 1000);
+  ultimoCuadro = ahora;
+
+  procesarSprites(grabando ? 400 : 40);
+
+  if (!pausado) {
+    tiempo += dt;
+    actualizar(dt);
+  }
+  dibujar();
+  if (grabando) volcarCuadro();
+}
+
+/* ═══════════════════ Encuadre y lienzo ═══════════════════ */
+
+/* Con formato fijo el escenario deja de ser la ventana entera: es una caja
+   centrada con esa proporción y la simulación corre adentro. Lo que se ve es
+   exactamente lo que se exporta. */
+function redimensionar() {
+  const f = FORMATOS[formato];
+  const antesW = W, antesH = H;
+  const dispW = window.innerWidth, dispH = window.innerHeight;
+  let bw = dispW, bh = dispH, bx = 0, by = 0;
+
+  if (f.ratio) {
+    const margen = dispW < 680 ? 12 : 34;
+    const dispoW = dispW - margen * 2, dispoH = dispH - margen * 2;
+    bw = Math.min(dispoW, dispoH * f.ratio);
+    bh = bw / f.ratio;
+    bx = (dispW - bw) / 2;
+    by = (dispH - bh) / 2;
+  }
+
+  escenario.classList.toggle('is-encuadrado', !!f.ratio);
+  escenario.style.left   = `${bx}px`;
+  escenario.style.top    = `${by}px`;
+  escenario.style.width  = `${bw}px`;
+  escenario.style.height = `${bh}px`;
+
+  W = Math.round(bw);
+  H = Math.round(bh);
+
+  if (mariposas.length && antesW > 0 && antesH > 0) {
+    const kx = W / antesW, ky = H / antesH;
+    mariposas.forEach(m => { m.x *= kx; m.y *= ky; });
+  }
+  estela.length = 0;
+
+  const antesDPR = DPR;
+  /* al grabar se sube la resolución interna para que el video salga nítido
+     sin cambiar nada de lo que se ve en pantalla */
+  DPR = grabando
+    ? destino().ancho / W
+    : Math.min(window.devicePixelRatio || 1, 2);
+
+  escena.width  = Math.round(W * DPR);
+  escena.height = Math.round(H * DPR);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+  /* los sprites están en píxeles de dispositivo: si cambia el DPR, se rehacen */
+  if (Math.abs(antesDPR - DPR) > 0.001) ensuciarSprites();
+}
+
+function ponerFormato(nombre) {
+  if (grabando) return;
+  formato = nombre;
+  document.querySelectorAll('[data-formato]').forEach(b => {
+    b.classList.toggle('is-activo', b.dataset.formato === nombre);
+  });
+  redimensionar();
+  actualizarNota();
+}
+
+/* ═══════════════════ Export (PNG y video) ═══════════════════ */
+
+/* Tamaño real de salida: el del formato, o la ventana redondeada a par
+   (los códecs de video piden dimensiones pares). */
+function destino() {
+  const f = FORMATOS[formato];
+  if (f.ratio) return { ancho: f.ancho, alto: f.alto };
+  const escala = Math.min(2, window.devicePixelRatio || 1);
+  return {
+    ancho: Math.round(W * escala / 2) * 2,
+    alto:  Math.round(H * escala / 2) * 2
+  };
+}
+
+function componer(g, ancho, alto) {
+  const color = P.sinFondo ? MATTES[matte] : P.fondo;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.clearRect(0, 0, ancho, alto);
+  if (color) { g.fillStyle = color; g.fillRect(0, 0, ancho, alto); }
+  g.imageSmoothingEnabled = true;
+  g.imageSmoothingQuality = 'high';
+  g.drawImage(escena, 0, 0, ancho, alto);
+}
+
+function descargar(url, nombre) {
+  ultimoArchivo = nombre;
+  actualizarComando();
+  const a = document.createElement('a');
+  a.download = nombre;
+  a.href = url;
+  a.click();
+}
+
+function guardarPNG() {
+  const { ancho, alto } = destino();
+  const salida = document.createElement('canvas');
+  salida.width = ancho; salida.height = alto;
+  componer(salida.getContext('2d'), ancho, alto);
+  descargar(salida.toDataURL('image/png'), `mariposas-${ancho}x${alto}-${Date.now()}.png`);
+}
+
+/* --- Video ---
+   Se graba un lienzo aparte del tamaño de salida: cada cuadro se compone ahí
+   y se empuja al stream con requestFrame(), así el video no depende de que el
+   navegador capture a tiempo. */
+const MIMES = [
+  'video/mp4;codecs=avc1.42E01E',
+  'video/mp4',
+  'video/webm;codecs=vp9',
+  'video/webm;codecs=vp8',
+  'video/webm'
+];
+const DURACION_MAX = 60;   // segundos: corta sola para no comerse la memoria
+
+let grabando = false;
+let grabador = null, pistaVideo = null, trozos = [], grabCanvas = null, grabCtx = null;
+let inicioGrabacion = 0, ultimoVolcado = 0;
+
+const recBadge = document.getElementById('rec');
+const recTiempo = document.getElementById('recTiempo');
+
+/* El navegador NO puede escribir QuickTime: MediaRecorder.isTypeSupported
+   ('video/quicktime') y ProRes ('ap4h') dan false. Lo único con canal alfa que
+   sabe grabar es WebM VP9, así que ese es el master para "sin fondo", y el
+   .mov ProRes 4444 sale de una conversión local (ver comandoMov()). Para todo
+   lo demás, MP4/H.264. */
+function conAlfa() {
+  return P.sinFondo && !MATTES[matte];
+}
+
+function mimeSoportado() {
+  if (typeof MediaRecorder === 'undefined') return null;
+  const lista = conAlfa()
+    ? ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm']
+    : MIMES;
+  return lista.find(m => MediaRecorder.isTypeSupported(m)) || null;
+}
+
+/* Conversión a QuickTime con alfa. ProRes 4444 (yuva444p10le) es el formato
+   que Premiere, After Effects y Final Cut abren con transparencia nativa.
+
+   OJO con "-c:v libvpx-vp9" ANTES del -i: el decoder VP9 que ffmpeg elige por
+   defecto descarta el plano alfa de WebM sin avisar y el .mov sale opaco. */
+let ultimoArchivo = 'mariposas.webm';
+
+function comandoMov() {
+  const base = ultimoArchivo.replace(/\.[^.]+$/, '');
+  return `ffmpeg -c:v libvpx-vp9 -i ${ultimoArchivo} -c:v prores_ks -profile:v 4444 -pix_fmt yuva444p10le ${base}.mov`;
+}
+
+function volcarCuadro() {
+  const ahora = performance.now();
+  if (ahora - ultimoVolcado < 1000 / 30) return;      // 30 fps
+  ultimoVolcado = ahora;
+  componer(grabCtx, grabCanvas.width, grabCanvas.height);
+  if (pistaVideo && pistaVideo.requestFrame) pistaVideo.requestFrame();
+
+  const seg = (ahora - inicioGrabacion) / 1000;
+  recTiempo.textContent = `${Math.floor(seg / 60)}:${String(Math.floor(seg % 60)).padStart(2, '0')}`;
+  if (seg >= DURACION_MAX) detenerGrabacion();
+}
+
+function iniciarGrabacion() {
+  const mime = mimeSoportado();
+  if (!mime) { alert('Este navegador no permite grabar video desde el canvas. Probá con Chrome.'); return; }
+
+  const { ancho, alto } = destino();
+  grabCanvas = document.createElement('canvas');
+  grabCanvas.width = ancho; grabCanvas.height = alto;
+  grabCtx = grabCanvas.getContext('2d', { alpha: true });
+
+  const stream = grabCanvas.captureStream(0);
+  pistaVideo = stream.getVideoTracks()[0];
+  trozos = [];
+  grabador = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 14e6 });
+  grabador.ondataavailable = e => { if (e.data.size) trozos.push(e.data); };
+  grabador.onstop = () => {
+    const blob = new Blob(trozos, { type: mime });
+    const ext = mime.includes('mp4') ? 'mp4' : 'webm';
+    const url = URL.createObjectURL(blob);
+    descargar(url, `mariposas-${ancho}x${alto}-${Date.now()}.${ext}`);
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    trozos = [];
+  };
+
+  grabando = true;
+  inicioGrabacion = performance.now();
+  ultimoVolcado = 0;
+  redimensionar();                    // sube la resolución interna al tamaño de salida
+  procesarSprites(mariposas.length);  // ningún sprite a medio cocinar en el primer cuadro
+  grabador.start();
+
+  recBadge.classList.add('is-visible');
+  recTiempo.textContent = '0:00';
+  btnRec.textContent = 'Detener y guardar';
+  btnRec.classList.add('is-grabando');
+  document.querySelectorAll('[data-formato]').forEach(b => b.disabled = true);
+}
+
+function detenerGrabacion() {
+  if (!grabando) return;
+  grabando = false;
+  if (grabador && grabador.state !== 'inactive') grabador.stop();
+  pistaVideo = null;
+  redimensionar();                    // vuelve a la resolución de pantalla
+
+  recBadge.classList.remove('is-visible');
+  btnRec.textContent = 'Grabar video';
+  btnRec.classList.remove('is-grabando');
+  document.querySelectorAll('[data-formato]').forEach(b => b.disabled = false);
+}
+
+/* ═══════════════════ Eventos ═══════════════════ */
+
+window.addEventListener('resize', () => { redimensionar(); actualizarNota(); });
+window.addEventListener('pointermove', e => {
+  const r = escenario.getBoundingClientRect();
+  mouse.x = e.clientX - r.left;
+  mouse.y = e.clientY - r.top;
+  mouse.activo = true;
+  mouse.ultimo = tiempo;
+});
+document.addEventListener('mouseleave', () => { mouse.activo = false; });
+window.addEventListener('blur', () => { mouse.activo = false; });
+
+window.addEventListener('keydown', e => {
+  if (e.target.matches('input, button')) return;
+  if (e.code === 'Space') { e.preventDefault(); pausado = !pausado; }
+  if (e.key.toLowerCase() === 'r') aleatorizar();
+  if (e.key.toLowerCase() === 'h') panel.classList.toggle('is-cerrado');
+});
+
+/* ═══════════════════ Panel ═══════════════════ */
+
+const panel = document.getElementById('panel');
+const panelBody = document.getElementById('panelBody');
+const panelToggle = document.getElementById('panelToggle');
+const refs = {};
+let btnRec = null;
+
+/* claves que obligan a recocinar los sprites */
+const AFECTAN_SPRITE = new Set([
+  'tamano', 'variacion', 'profundidad', 'desenfoque', 'foco',
+  'mezcla', 'saturacion', 'luminosidad', 'brillo'
+]);
+
+function bloque(titulo, html) {
+  const div = document.createElement('div');
+  div.className = 'grupo';
+  div.innerHTML = `<h2 class="grupo__titulo">${titulo}</h2>${html}`;
+  panelBody.appendChild(div);
+  return div;
+}
+
+function construirPanel() {
+  /* --- formato y export --- */
+  const exp = bloque('Formato y export', `
+    <div class="fila-botones">
+      ${Object.keys(FORMATOS).map(n => `<button class="chip${n === formato ? ' is-activo' : ''}" type="button" data-formato="${n}">${n}</button>`).join('')}
+    </div>
+    <div class="fila-botones" id="filaMatte" hidden>
+      ${Object.entries(MATTES).map(([n, c]) => `<button class="chip${n === matte ? ' is-activo' : ''}" type="button" data-matte="${n}"><span class="chip__punto" style="background:${c || 'repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 50% / 6px 6px'}"></span>${n}</button>`).join('')}
+    </div>
+    <div class="botones">
+      <button class="btn btn--ancho btn--rec" type="button" id="btnRec">Grabar video</button>
+      <button class="btn btn--ancho" type="button" id="btnPng">Guardar PNG</button>
+    </div>
+    <p class="nota" id="notaExport"></p>
+    <div id="bloqueMov" hidden>
+      <div class="comando" id="comandoMov"></div>
+      <div class="comando__pie">
+        <button class="chip" type="button" id="btnCopiar">Copiar</button>
+        <p class="nota">Convierte el WebM con alfa a QuickTime ProRes 4444.</p>
+      </div>
+    </div>`);
+
+  exp.querySelectorAll('[data-formato]').forEach(b => {
+    b.addEventListener('click', () => ponerFormato(b.dataset.formato));
+  });
+  exp.querySelectorAll('[data-matte]').forEach(b => {
+    b.addEventListener('click', () => {
+      matte = b.dataset.matte;
+      exp.querySelectorAll('[data-matte]').forEach(o => o.classList.toggle('is-activo', o === b));
+      actualizarNota();
+    });
+  });
+  document.getElementById('btnCopiar').addEventListener('click', copiarComando);
+  btnRec = document.getElementById('btnRec');
+  btnRec.addEventListener('click', () => grabando ? detenerGrabacion() : iniciarGrabacion());
+  document.getElementById('btnPng').addEventListener('click', guardarPNG);
+
+  /* --- paleta --- */
+  const pal = bloque('Paleta', `
+    <div class="paleta" id="paleta">
+      ${paleta.map((m, i) => `
+        <label class="muestra" data-i="${i}">
+          <input type="checkbox" ${m.activo ? 'checked' : ''} aria-label="Usar color ${i + 1}">
+          <input type="color" value="${m.color}" aria-label="Color ${i + 1}">
+        </label>`).join('')}
+    </div>
+    <p class="nota">Tocá una muestra para cambiar el color, el tilde la enciende o apaga. “Mezcla” interpola entre las encendidas.</p>`);
+
+  pal.querySelectorAll('.muestra').forEach(el => {
+    const i = Number(el.dataset.i);
+    const check = el.querySelector('input[type="checkbox"]');
+    const color = el.querySelector('input[type="color"]');
+    check.addEventListener('change', () => {
+      paleta[i].activo = check.checked;
+      el.classList.toggle('is-apagada', !check.checked);
+      ensuciarSprites();
+    });
+    color.addEventListener('input', () => {
+      paleta[i].color = color.value;
+      ensuciarSprites();
+    });
+    refs['_muestra' + i] = { check, color, el };
+  });
+
+  /* --- sliders generados desde PARAMETROS --- */
+  PARAMETROS.forEach(grupo => {
+    const cont = bloque(grupo.grupo, '');
+    grupo.controles.forEach(c => {
+      const fila = document.createElement('div');
+      fila.className = 'ctrl';
+
+      if (c.tipo === 'switch') {
+        fila.innerHTML = `<label class="check"><input type="checkbox" ${c.valor ? 'checked' : ''}> ${c.label}</label>`;
+        const input = fila.querySelector('input');
+        input.addEventListener('change', () => aplicar(c.clave, input.checked));
+        refs[c.clave] = { input };
+      } else if (c.tipo === 'color') {
+        fila.innerHTML = `<div class="ctrl__fila"><span>${c.label}</span></div>
+                          <input type="color" value="${c.valor}">`;
+        const input = fila.querySelector('input');
+        input.addEventListener('input', () => aplicar(c.clave, input.value));
+        refs[c.clave] = { input };
+      } else {
+        fila.innerHTML = `<div class="ctrl__fila"><span>${c.label}</span><span class="ctrl__valor"></span></div>
+                          <input type="range" min="${c.min}" max="${c.max}" step="${c.paso}" value="${c.valor}">`;
+        const input = fila.querySelector('input');
+        const salida = fila.querySelector('.ctrl__valor');
+        salida.textContent = c.valor;
+        input.addEventListener('input', () => aplicar(c.clave, parseFloat(input.value)));
+        refs[c.clave] = { input, salida };
+      }
+      cont.appendChild(fila);
+    });
+  });
+
+  /* --- presets y acciones --- */
+  const acc = bloque('Presets', `
+    <div class="fila-botones">
+      ${Object.keys(PRESETS).map(n => `<button class="chip" type="button" data-preset="${n}">${n}</button>`).join('')}
+    </div>
+    <div class="botones">
+      <button class="btn" type="button" id="btnAzar">Aleatorizar</button>
+      <button class="btn" type="button" id="btnPausa">Pausar</button>
+      <button class="btn" type="button" id="btnReset">Reiniciar</button>
+      <button class="btn" type="button" id="btnSemillas">Resembrar</button>
+    </div>`);
+
+  acc.querySelectorAll('[data-preset]').forEach(b => {
+    b.addEventListener('click', () => aplicarPreset(b.dataset.preset));
+  });
+  document.getElementById('btnAzar').addEventListener('click', aleatorizar);
+  document.getElementById('btnReset').addEventListener('click', () => {
+    setValores(DEFECTOS);
+    ponerPaleta(PALETA_INICIAL);
+    resembrar();
+  });
+  document.getElementById('btnSemillas').addEventListener('click', resembrar);
+  const btnPausa = document.getElementById('btnPausa');
+  btnPausa.addEventListener('click', () => {
+    pausado = !pausado;
+    btnPausa.textContent = pausado ? 'Seguir' : 'Pausar';
+  });
+
+  actualizarNota();
+}
+
+function actualizarNota() {
+  const { ancho, alto } = destino();
+  const mime = mimeSoportado();
+  const ext = mime ? (mime.includes('mp4') ? 'MP4' : 'WEBM') : 'no disponible';
+  const detalle = !P.sinFondo
+    ? ''
+    : conAlfa()
+      ? ' · sin fondo: PNG y WebM VP9 con canal alfa (el navegador no puede escribir QuickTime; se convierte abajo)'
+      : ` · fondo plano ${matte.toLowerCase()} para cromar`;
+  document.getElementById('notaExport').textContent =
+    `Salida ${ancho}×${alto} · video ${ext} a 30 fps (corta solo a los ${DURACION_MAX} s)${detalle}.`;
+  actualizarComando();
+}
+
+function actualizarComando() {
+  const bl = document.getElementById('bloqueMov');
+  if (!bl) return;
+  bl.hidden = !conAlfa();
+  document.getElementById('comandoMov').textContent = comandoMov();
+}
+
+function copiarComando() {
+  const texto = comandoMov();
+  const listo = () => {
+    const b = document.getElementById('btnCopiar');
+    b.textContent = 'Copiado';
+    setTimeout(() => { b.textContent = 'Copiar'; }, 1400);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(texto).then(listo, copiarAlaAntigua);
+  } else {
+    copiarAlaAntigua();
+  }
+  /* file:// suele bloquear el portapapeles moderno: red de seguridad */
+  function copiarAlaAntigua() {
+    const t = document.createElement('textarea');
+    t.value = texto;
+    document.body.appendChild(t);
+    t.select();
+    try { document.execCommand('copy'); listo(); } catch (e) {}
+    t.remove();
+  }
+}
+
+function aplicar(clave, valor) {
+  P[clave] = valor;
+  const r = refs[clave];
+  if (r && r.salida) r.salida.textContent = valor;
+
+  if (clave === 'cantidad') ajustarPoblacion();
+  if (clave === 'variacion') mariposas.forEach(m => {
+    m.escala = azar(1 - P.variacion, 1 + P.variacion * 1.4) * 0.5;
+  });
+  if (AFECTAN_SPRITE.has(clave)) ensuciarSprites();
+  if (clave === 'fondo' && !P.sinFondo) escenario.style.backgroundColor = valor;
+  if (clave === 'sinFondo') {
+    escenario.classList.toggle('is-transparente', !!valor);
+    escenario.style.backgroundColor = valor ? '' : P.fondo;
+    const fila = document.getElementById('filaMatte');
+    if (fila) fila.hidden = !valor;
+    actualizarNota();
+  }
+}
+
+function setValores(valores) {
+  Object.entries(valores).forEach(([clave, valor]) => {
+    const r = refs[clave];
+    if (!r) return;
+    if (r.input.type === 'checkbox') r.input.checked = valor;
+    else r.input.value = valor;
+    aplicar(clave, valor);
+  });
+}
+
+function ponerPaleta(colores) {
+  paleta.forEach((m, i) => {
+    const nuevo = colores[i];
+    m.color = nuevo || m.color;
+    m.activo = i < colores.length;
+    const r = refs['_muestra' + i];
+    if (!r) return;
+    r.color.value = m.color;
+    r.check.checked = m.activo;
+    r.el.classList.toggle('is-apagada', !m.activo);
+  });
+  ensuciarSprites();
+}
+
+function aplicarPreset(nombre) {
+  const { paleta: cols, ...valores } = PRESETS[nombre] || {};
+  setValores(DEFECTOS);
+  setValores(valores);
+  ponerPaleta(cols || PALETA_INICIAL);
+  resembrar();
+}
+
+function aleatorizar() {
+  const nuevos = {};
+  PARAMETROS.forEach(g => g.controles.forEach(c => {
+    if (c.tipo === 'switch')             return;                  // sin fondo se respeta
+    else if (c.tipo === 'color')         return;                  // el fondo se respeta
+    else if (c.clave === 'cantidad')     nuevos[c.clave] = Math.round(azar(60, 300));
+    else if (c.clave === 'tamano')       nuevos[c.clave] = Math.round(azar(16, 90));
+    else if (c.clave === 'opacidad')     nuevos[c.clave] = alPaso(azar(0.4, 0.95), c.paso);
+    else if (c.clave === 'velocidad')    nuevos[c.clave] = alPaso(azar(0.5, 1.8), c.paso);
+    else if (c.clave === 'iman')         nuevos[c.clave] = alPaso(azar(0.4, 2), c.paso);
+    else if (c.clave === 'estela')       nuevos[c.clave] = Math.random() < 0.5 ? 0 : alPaso(azar(0.7, 0.95), c.paso);
+    else if (c.clave === 'luminosidad')  nuevos[c.clave] = alPaso(azar(-15, 15), c.paso);
+    else if (c.clave === 'saturacion')   nuevos[c.clave] = alPaso(azar(60, 160), c.paso);
+    else if (c.clave === 'desenfoque')   nuevos[c.clave] = alPaso(azar(4, 28), c.paso);
+    else nuevos[c.clave] = alPaso(azar(c.min, c.max), c.paso);
+  }));
+  setValores(nuevos);
+  resembrar();
+}
+
+function resembrar() {
+  mariposas = [];
+  estela.length = 0;
+  ajustarPoblacion();
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+}
+
+panelToggle.addEventListener('click', e => {
+  e.stopPropagation();
+  panel.classList.toggle('is-cerrado');
+  panelToggle.textContent = panel.classList.contains('is-cerrado') ? '+' : '–';
+});
+document.getElementById('panelHead').addEventListener('click', () => panelToggle.click());
+
+/* ═══════════════════ Arranque ═══════════════════ */
+
+construirPanel();
+escenario.style.backgroundColor = P.fondo;
+redimensionar();
+resembrar();
+actualizarNota();
+requestAnimationFrame(bucle);
+</script>
+</body>
+</html>
